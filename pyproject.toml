@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-readiness"
+version = "0.2.0"
+description = "Deterministic AI Agent Repository Readiness Scanner & Auto-Onboarder"
+readme = "README.md"
+authors = [{ name = "zcdlab" }]
+license = { text = "MIT" }
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.0",
+    "pytest>=8.0",
+]
+
+[project.scripts]
+readiness = "src.cli:main"
+agent-readiness = "src.cli:main"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
