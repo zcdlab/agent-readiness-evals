@@ -1,0 +1,5 @@
+py_library(
+    name = "handler_lib",
+    srcs = ["src/handler.py"],
+)
+
