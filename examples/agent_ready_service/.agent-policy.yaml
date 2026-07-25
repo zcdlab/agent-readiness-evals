@@ -1,0 +1,41 @@
+# Zero-Trust AI Agent Policy Contract
+# High-Assurance Sandbox & Blast Radius Governance
+version: "1.0"
+schema_version: "2026.1"
+permission_tier: sandbox_write
+enforcement: strict
+
+# Quarantined paths protected from autonomous agent mutations
+protected_paths:
+  - .agent-policy.yaml
+  - infra/prod/
+  - .env
+  - db/migrations/
+  - security/
+
+# Bounded tool permissions
+allowed_tools:
+  - file_read
+  - file_edit
+  - run_command
+
+# Strict runtime bash boundary
+command_rules:
+  allowed_patterns:
+    - "pytest*"
+    - "python -m pytest*"
+    - "ruff*"
+    - "mypy*"
+    - "git diff*"
+    - "git status"
+  banned_patterns:
+    - "rm -rf*"
+    - "*curl*|*sh*"
+    - "*curl*|*bash*"
+    - "git push --force*"
+    - "kill -9*"
+
+# Deterministic verification hooks
+verification_hooks:
+  pre_commit_gate: "pytest -v --tb=short tests/"
+  max_execution_timeout_ms: 10000

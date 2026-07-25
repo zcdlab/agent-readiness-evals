@@ -1,0 +1,12 @@
+[project]
+name = "payment-gateway"
+version = "1.0.0"
+description = "Certified Agent-Ready Payment Service"
+dependencies = [
+    "pydantic>=2.0",
+    "pytest>=8.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
