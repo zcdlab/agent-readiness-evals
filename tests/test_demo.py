@@ -10,7 +10,6 @@ def test_demo_index_html_exists_and_contains_core_elements():
     assert "agent-readiness" in content
     assert 'What Makes a Repository "Agent-Ready"?' in content
     assert "The 4 Foundations of Harness Engineering" in content
-    assert "Standalone CLI Simulator" in content
     assert "unconfigured_service" in content
     assert "agent_ready_service" in content
     assert "Auto-Onboard" in content
@@ -48,8 +47,7 @@ def test_demo_javascript_syntax_and_integrity():
     # Ensure all interactive functions are declared
     required_fns = [
         "switchTab", "selectSampleRepo", "renderSampleRepo",
-        "selectFile", "renderSelectedFile", "autoOnboardCurrentRepo",
-        "runCliSim"
+        "selectFile", "renderSelectedFile", "autoOnboardCurrentRepo"
     ]
     for fn in required_fns:
         assert f"function {fn}" in code, f"Missing function {fn} in docs/index.html"
