@@ -47,9 +47,6 @@
       <button onclick="switchTab('tab-anatomy')" id="btn-tab-anatomy" class="tab-btn py-3.5 border-b-2 border-transparent text-slate-500 hover:text-slate-800 font-medium whitespace-nowrap transition-colors">
         2. Anatomy of an Agent-Ready Repository
       </button>
-      <button onclick="switchTab('tab-cli')" id="btn-tab-cli" class="tab-btn py-3.5 border-b-2 border-transparent text-slate-500 hover:text-slate-800 font-medium whitespace-nowrap transition-colors">
-        3. Standalone CLI Simulator
-      </button>
     </div>
   </nav>
 
@@ -331,56 +328,6 @@
               </tr>
             </tbody>
           </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- ======================================================== -->
-    <!-- TAB 3: STANDALONE CLI SIMULATOR                          -->
-    <!-- ======================================================== -->
-    <section id="tab-cli" class="tab-pane hidden space-y-6">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <div>
-          <h2 class="text-xl font-bold text-slate-900">Interactive Readiness CLI Simulator</h2>
-          <p class="text-sm text-slate-600 mt-0.5">Run real repository scans and auto-onboarding commands against sample codebases.</p>
-        </div>
-      </div>
-
-      <!-- Command Pills -->
-      <div class="flex flex-wrap gap-2 text-xs font-mono">
-        <button onclick="runCliSim('scan-unprepared')" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 hover:border-red-500 hover:text-red-600 shadow-sm transition">
-          $ readiness scan examples/unprepared_service
-        </button>
-        <button onclick="runCliSim('scan-ready')" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 hover:border-emerald-500 hover:text-emerald-600 shadow-sm transition">
-          $ readiness scan examples/agent_ready_service
-        </button>
-        <button onclick="runCliSim('fix-unprepared')" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 hover:border-blue-500 hover:text-blue-600 shadow-sm transition">
-          $ readiness fix examples/unprepared_service
-        </button>
-        <button onclick="runCliSim('json-ready')" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 hover:border-purple-500 hover:text-purple-600 shadow-sm transition">
-          $ readiness scan examples/agent_ready_service --json
-        </button>
-      </div>
-
-      <!-- High-Contrast Terminal Output (Clean dark terminal inside clean white page) -->
-      <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-md">
-        <div class="bg-slate-800/80 px-4 py-2 border-b border-slate-700 flex items-center justify-between text-xs text-slate-400">
-          <div class="flex items-center space-x-2">
-            <span class="h-2.5 w-2.5 rounded-full bg-red-500 inline-block"></span>
-            <span class="h-2.5 w-2.5 rounded-full bg-amber-500 inline-block"></span>
-            <span class="h-2.5 w-2.5 rounded-full bg-emerald-500 inline-block"></span>
-            <span class="font-mono text-slate-300 ml-2">readiness CLI v0.2.0</span>
-          </div>
-          <span class="font-mono text-[11px] text-slate-500">zsh session</span>
-        </div>
-        <div id="cli-screen" class="p-5 font-mono text-xs leading-relaxed text-slate-300 min-h-[300px] space-y-2 overflow-x-auto">
-          <div class="text-slate-500"># Welcome to the AgentReadiness Interactive Terminal</div>
-          <div class="text-slate-500"># Click any command button above to test real CLI scanning.</div>
-          <div class="text-blue-400 font-bold">$ readiness --help</div>
-          <div class="text-slate-300">usage: readiness [-h] {scan,fix,ui} ...</div>
-          <div class="text-slate-400">&nbsp;&nbsp;scan&nbsp;&nbsp;&nbsp;&nbsp;Scan repository and output readiness score breakdown</div>
-          <div class="text-slate-400">&nbsp;&nbsp;fix&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Auto-onboard repository and generate missing contracts</div>
-          <div class="text-slate-400">&nbsp;&nbsp;ui&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Open Control Plane Web UI</div>
         </div>
       </div>
     </section>
@@ -1277,71 +1224,6 @@
 
         if (banner) banner.classList.add('hidden');
         renderSampleRepo();
-      }
-    }
-
-    function runCliSim(cmd) {
-      const screen = document.getElementById('cli-screen');
-      if (cmd === 'scan-unprepared') {
-        screen.innerHTML = `
-          <div class="text-blue-400 font-bold">$ readiness scan examples/unprepared_service</div>
-          <div class="text-slate-300">📦 Repository: unprepared_service (examples/unprepared_service)</div>
-          <div class="text-red-400 font-bold">📊 Readiness Score: 0/100 [F - Unprepared]</div>
-          <div class="text-slate-400">⚙️  Detected Stack: None</div>
-          <div class="text-red-400">🛡️  Quarantined Paths: infra/prod/, .env</div>
-          <div class="text-slate-400 mt-2">Pillars Breakdown:</div>
-          <div class="text-red-400">&nbsp;&nbsp;[FAIL] Build &amp; Dependency Specs&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0/25 pts (Missing reproducible build config)</div>
-          <div class="text-red-400">&nbsp;&nbsp;[FAIL] Verification Test Harness&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0/25 pts (Missing test harness directory)</div>
-          <div class="text-red-400">&nbsp;&nbsp;[FAIL] Blast-Radius Boundary Policy&nbsp;&nbsp;&nbsp;&nbsp;0/25 pts (Missing .agent-policy.yaml)</div>
-          <div class="text-red-400">&nbsp;&nbsp;[FAIL] Agent Operating Guidelines&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0/25 pts (Missing AGENTS.md contract)</div>
-          <div class="text-amber-300 mt-2">Missing Safeguards: .agent-policy.yaml, AGENTS.md</div>
-          <div class="text-blue-300">&gt; Run 'readiness fix examples/unprepared_service' to auto-onboard to 100/100.</div>
-        `;
-      } else if (cmd === 'scan-ready') {
-        screen.innerHTML = `
-          <div class="text-blue-400 font-bold">$ readiness scan examples/agent_ready_service</div>
-          <div class="text-slate-300">📦 Repository: agent_ready_service (examples/agent_ready_service)</div>
-          <div class="text-emerald-400 font-bold">📊 Readiness Score: 100/100 [A - Enterprise Agent Ready]</div>
-          <div class="text-slate-300">⚙️  Detected Stack: python</div>
-          <div class="text-emerald-400">🛡️  Quarantined Paths: infra/prod/, .env</div>
-          <div class="text-slate-400 mt-2">Pillars Breakdown:</div>
-          <div class="text-emerald-400">&nbsp;&nbsp;[PASS] Build &amp; Dependency Specs&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;25/25 pts (Detected: python)</div>
-          <div class="text-emerald-400">&nbsp;&nbsp;[PASS] Verification Test Harness&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;25/25 pts (Automated test suite present)</div>
-          <div class="text-emerald-400">&nbsp;&nbsp;[PASS] Blast-Radius Boundary Policy&nbsp;&nbsp;&nbsp;&nbsp;25/25 pts (Zero-trust path boundary active)</div>
-          <div class="text-emerald-400">&nbsp;&nbsp;[PASS] Agent Operating Guidelines&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;25/25 pts (Guidelines active in repository)</div>
-          <div class="text-emerald-300 mt-2">&check; All 4 pillars passed. Codebase is 100% certified for autonomous coding agents.</div>
-        `;
-      } else if (cmd === 'fix-unprepared') {
-        screen.innerHTML = `
-          <div class="text-blue-400 font-bold">$ readiness fix examples/unprepared_service</div>
-          <div class="text-slate-300">&gt; Scanning examples/unprepared_service...</div>
-          <div class="text-slate-400">&gt; Discovered sensitive directory: infra/prod/</div>
-          <div class="text-slate-400">&gt; Discovered sensitive secret file: .env</div>
-          <div class="text-emerald-400">&gt; Synthesized zero-trust boundary: .agent-policy.yaml</div>
-          <div class="text-emerald-400">&gt; Synthesized operating contract: AGENTS.md</div>
-          <div class="text-emerald-400 font-bold mt-1">&check; Auto-Onboarded unprepared_service successfully!</div>
-          <div class="text-emerald-300">   Score: 0/100 &rarr; 100/100 [A - Enterprise Agent Ready]</div>
-          <div class="text-slate-400">   All sensitive paths quarantined. Operating guidelines active.</div>
-        `;
-      } else if (cmd === 'json-ready') {
-        screen.innerHTML = `
-          <div class="text-blue-400 font-bold">$ readiness scan examples/agent_ready_service --json</div>
-          <pre class="text-slate-300 text-[11px] leading-tight">{
-  "repo_name": "agent_ready_service",
-  "score_before": 100,
-  "score_after": 100,
-  "grade": "A - Enterprise Agent Ready",
-  "detected_stack": ["python"],
-  "discovered_sensitive_paths": ["infra/prod/", ".env"],
-  "pillars": [
-    { "name": "Build &amp; Dependency Specs", "score": 25, "passed": true },
-    { "name": "Verification Test Harness", "score": 25, "passed": true },
-    { "name": "Blast-Radius Boundary Policy", "score": 25, "passed": true },
-    { "name": "Agent Operating Guidelines", "score": 25, "passed": true }
-  ],
-  "missing_safeguards": []
-}</pre>
-        `;
       }
     }
 
