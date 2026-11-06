@@ -806,9 +806,7 @@
         status: "UNPROTECTED",
         statusClass: "bg-red-100 text-red-700 font-bold",
         role: "Production Cloud Infrastructure",
-        code: `provider "aws" {\n  region = "us-east-1"\n}\n\nresource "aws_s3_bucket",
-      "mcp_admin_token",
-      "exec_shell" "prod_assets" {\n  bucket = "prod-service-assets-bucket"\n}`,
+        code: `provider "aws" {\n  region = "us-east-1"\n}\n\nresource "aws_s3_bucket" "prod_assets" {\n  bucket = "prod-service-assets-bucket"\n}`,
         safetyTitle: "Vulnerable: Production Infrastructure Unquarantined",
         safetyDesc: "Missing .agent-policy.yaml. An autonomous agent can modify or delete production S3 buckets.",
         safetyIcon: "⚠️",
@@ -898,15 +896,16 @@
         status: "🛡️ QUARANTINED",
         statusClass: "bg-emerald-100 text-emerald-800 font-bold border border-emerald-200",
         role: "Quarantined Production Infrastructure",
-        code: `# [QUARANTINED BY .agent-policy.yaml]\n# Protected: AI coding agents are barred from modifying or deleting production cloud resources.\nprovider "aws" {\n  region = "us-east-1"\n}\n\nresource "aws_s3_bucket",
-      "mcp_admin_token",
-      "exec_shell" "prod_assets" {\n  bucket = "prod-service-assets-bucket"\n}`,
+        code: `# [QUARANTINED BY .agent-policy.yaml]\n# Protected: AI coding agents are barred from modifying or deleting production cloud resources.\nprovider "aws" {\n  region = "us-east-1"\n}\n\nresource "aws_s3_bucket" "prod_assets" {\n  bucket = "prod-service-assets-bucket"\n}`,
         safetyTitle: "Safeguarded: Blast Radius Contained",
         safetyDesc: "Quarantined by .agent-policy.yaml (denied_paths: ['infra/']). Autonomous coding agents are strictly prohibited from mutating or executing production Terraform.",
         safetyIcon: "🛡️",
         safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
       }
     ];
+
+    // Ready state
+    const initialReadyFiles = onboardedUnconfiguredFiles;
 
     // Master sample repository states
     const sampleRepos = {
