@@ -76,11 +76,11 @@
         </p>
       </div>
 
-      <!-- Sample Repo Toggle Buttons -->
+      <!-- Sample Repo Toggle Buttons: 0% and 50% only (100% hidden) -->
       <div>
-        <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-2">Select a Sample Repository to Inspect:</label>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <!-- Option 1: Unprepared -->
+        <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-2">Select a Target Codebase to Inspect &amp; Auto-Onboard (0% or 50%):</label>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Option 1: Unprepared (0/100) -->
           <button onclick="selectSampleRepo('unprepared')" id="btn-repo-unprepared" class="repo-card-btn text-left p-4 rounded-xl border-2 border-red-500 bg-red-50/40 text-slate-900 shadow-sm transition">
             <div class="flex items-center justify-between">
               <span class="text-xs font-bold text-red-700 flex items-center gap-1.5">
@@ -92,7 +92,7 @@
             <div class="text-[11px] text-slate-500 mt-1">Exposed .env, unprotected Terraform, no tests, no AGENTS.md</div>
           </button>
 
-          <!-- Option 2: Unconfigured -->
+          <!-- Option 2: Unconfigured (50/100) -->
           <button onclick="selectSampleRepo('unconfigured')" id="btn-repo-unconfigured" class="repo-card-btn text-left p-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-sm transition">
             <div class="flex items-center justify-between">
               <span class="text-xs font-bold text-amber-700 flex items-center gap-1.5">
@@ -104,16 +104,9 @@
             <div class="text-[11px] text-slate-500 mt-1">Has tests and Bazel, but missing policy and agent contracts</div>
           </button>
 
-          <!-- Option 3: Agent Ready -->
-          <button onclick="selectSampleRepo('ready')" id="btn-repo-ready" class="repo-card-btn text-left p-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-sm transition">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-emerald-700 flex items-center gap-1.5">
-                <span class="h-2 w-2 rounded-full bg-emerald-600"></span> ✅ Certified Agent-Ready
-              </span>
-              <span class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">100 / 100</span>
-            </div>
-            <div class="text-xs font-mono text-slate-700 mt-2 font-semibold">examples/agent_ready_service/</div>
-            <div class="text-[11px] text-slate-500 mt-1">Zero-trust .agent-policy.yaml, AGENTS.md, pinned build &amp; tests</div>
+          <!-- Hidden Option 3: Agent Ready (Preserved for tests & architecture references) -->
+          <button onclick="selectSampleRepo('ready')" id="btn-repo-ready" class="hidden">
+            <span>examples/agent_ready_service/</span>
           </button>
         </div>
       </div>
@@ -136,7 +129,7 @@
           </div>
         </div>
 
-        <!-- In-Place Auto-Onboard Banner -->
+        <!-- In-Place Auto-Onboard Banner / Live Synthesis Progress HUD -->
         <div id="onboard-banner" class="hidden p-3 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-900 text-xs flex items-center justify-between gap-2 transition-all">
           <div class="flex items-center gap-2">
             <span class="text-base">⚡</span>
@@ -144,6 +137,9 @@
           </div>
           <span id="banner-score" class="text-[10px] font-mono bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded font-bold">Score: 100/100</span>
         </div>
+
+        <!-- 4-Pillar Live Verification Scorecard -->
+        <div id="pillars-container" class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 pb-1"></div>
 
         <!-- 2-Column Inspector: File Tree vs File Viewer -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
@@ -751,8 +747,15 @@
 
     let currentSampleKey = 'unprepared';
     let currentSelectedFileIndex = 0;
+    let onboardSpinTimers = [];
+    let isSpinning = false;
 
     function selectSampleRepo(key) {
+      if (isSpinning) {
+        onboardSpinTimers.forEach(t => clearTimeout(t));
+        onboardSpinTimers = [];
+        isSpinning = false;
+      }
       currentSampleKey = key;
       currentSelectedFileIndex = 0;
 
@@ -793,22 +796,59 @@
         }
       }
 
+      // Render 4-Pillar Live Scorecard
+      const pillars = [
+        {
+          name: "1. Build Specs",
+          pts: (r.score >= 50 ? 25 : 0),
+          desc: (r.score >= 50 ? "pyproject.toml / Bazel" : "Missing config")
+        },
+        {
+          name: "2. Test Harness",
+          pts: (r.score >= 50 ? 25 : 0),
+          desc: (r.score >= 50 ? "Automated tests active" : "Missing test harness")
+        },
+        {
+          name: "3. Boundary Policy",
+          pts: (r.score === 100 ? 25 : 0),
+          desc: (r.score === 100 ? ".agent-policy.yaml" : "No zero-trust policy")
+        },
+        {
+          name: "4. Operating Contract",
+          pts: (r.score === 100 ? 25 : 0),
+          desc: (r.score === 100 ? "AGENTS.md active" : "Missing contract")
+        }
+      ];
+
+      const pillarsCont = document.getElementById('pillars-container');
+      if (pillarsCont) {
+        pillarsCont.innerHTML = pillars.map(p => `
+          <div class="p-2.5 rounded-lg border text-xs ${p.pts === 25 ? 'bg-emerald-50/80 border-emerald-200 text-emerald-900' : 'bg-red-50/80 border-red-200 text-red-900'}">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-[11px] truncate">${p.name}</span>
+              <span class="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded ${p.pts === 25 ? 'bg-emerald-200 text-emerald-900' : 'bg-red-200 text-red-900'}">${p.pts}/25</span>
+            </div>
+            <div class="text-[10px] mt-0.5 text-slate-600 truncate">${p.desc}</div>
+          </div>
+        `).join('');
+      }
+
       // Update action button
       const btnFix = document.getElementById('btn-fix-current');
-      const btnLabel = document.getElementById('btn-fix-label');
-
-      if (currentSampleKey === 'ready') {
+      if (isSpinning) {
+        // Keep spinning UI
+      } else if (currentSampleKey === 'ready') {
         btnFix.disabled = true;
         btnFix.className = "px-3.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 font-semibold text-xs border border-emerald-200 cursor-default flex items-center gap-1.5";
-        btnLabel.textContent = "✓ Certified Agent-Ready (100/100)";
+        btnFix.innerHTML = '<span>✓</span> <span id="btn-fix-label">Certified Agent-Ready (100/100)</span>';
       } else if (r.onboarded) {
         btnFix.disabled = false;
         btnFix.className = "px-3.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs border border-slate-300 transition-all flex items-center gap-1.5 shadow-xs";
-        btnLabel.textContent = `↺ Revert to Initial (${r.initialScore}/100)`;
+        btnFix.innerHTML = `<span>↺</span> <span id="btn-fix-label">Revert to Initial (${r.initialScore}/100)</span>`;
       } else {
         btnFix.disabled = false;
         btnFix.className = "px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-sm transition-all flex items-center gap-1.5";
-        btnLabel.textContent = `⚡ Auto-Onboard to 100/100 (readiness fix)`;
+        btnFix.innerHTML = `<span>⚡</span> <span id="btn-fix-label">Auto-Onboard to 100/100 (readiness fix)</span>`;
       }
 
       // Render Tree
@@ -870,68 +910,117 @@
     function autoOnboardCurrentRepo() {
       const r = sampleRepos[currentSampleKey];
       const banner = document.getElementById('onboard-banner');
-      const bannerText = document.getElementById('banner-text');
-      const bannerScore = document.getElementById('banner-score');
+      const btnFix = document.getElementById('btn-fix-current');
 
-      if (currentSampleKey === 'unprepared') {
-        if (!r.onboarded) {
+      if (isSpinning) return;
+
+      if (!r.onboarded) {
+        // START 3-SECOND SPIN & HOLD
+        isSpinning = true;
+        onboardSpinTimers.forEach(t => clearTimeout(t));
+        onboardSpinTimers = [];
+
+        btnFix.disabled = true;
+        btnFix.className = "px-3.5 py-1.5 rounded-lg bg-blue-600 text-white font-semibold text-xs shadow-sm flex items-center gap-2 cursor-wait opacity-95 transition-all";
+        btnFix.innerHTML = `
+          <svg class="animate-spin h-3.5 w-3.5 text-white shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span id="btn-fix-label">Running readiness fix... (3s)</span>
+        `;
+
+        if (banner) {
+          banner.classList.remove('hidden');
+          banner.className = "p-3 rounded-lg border border-blue-200 bg-blue-50 text-blue-900 text-xs flex items-center justify-between gap-2 transition-all";
+          banner.innerHTML = `
+            <div class="flex items-center gap-2">
+              <svg class="animate-spin h-4 w-4 text-blue-600 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span id="banner-spin-text" class="font-medium animate-pulse">Step 1/3: Scanning AST &amp; quarantining sensitive paths (.env, infra/prod/)...</span>
+            </div>
+            <span id="banner-spin-timer" class="font-mono text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-bold shrink-0">1.0s / 3.0s</span>
+          `;
+        }
+
+        // Timer 1: 1.0s
+        const t1 = setTimeout(() => {
+          const st = document.getElementById('banner-spin-text');
+          const tm = document.getElementById('banner-spin-timer');
+          if (st) st.innerHTML = "Step 2/3: Synthesizing zero-trust <code>.agent-policy.yaml</code> blast-radius boundary...";
+          if (tm) tm.textContent = "2.0s / 3.0s";
+        }, 1000);
+        onboardSpinTimers.push(t1);
+
+        // Timer 2: 2.0s
+        const t2 = setTimeout(() => {
+          const st = document.getElementById('banner-spin-text');
+          const tm = document.getElementById('banner-spin-timer');
+          if (st) st.innerHTML = "Step 3/3: Synthesizing <code>AGENTS.md</code> operating contract with 5-tier verification ladder...";
+          if (tm) tm.textContent = "3.0s / 3.0s";
+        }, 2000);
+        onboardSpinTimers.push(t2);
+
+        // Timer 3: 3.0s (Completion)
+        const t3 = setTimeout(() => {
+          isSpinning = false;
           r.onboarded = true;
           r.score = 100;
           r.badge = "100 / 100 [A - Enterprise Agent Ready]";
           r.badgeClass = "bg-emerald-100 text-emerald-800 border-emerald-200";
-          r.summary = "✨ Successfully Auto-Onboarded: Quarantined 2 sensitive paths, synthesized .agent-policy.yaml, AGENTS.md, build spec, and test harness in-place.";
-          r.files = [...initialUnpreparedFiles, ...synthesizedUnpreparedFiles];
-          currentSelectedFileIndex = 3; // select .agent-policy.yaml
-          if (banner) {
-            banner.classList.remove('hidden');
-            bannerText.textContent = "⚡ readiness fix executed in-place: Synthesized .agent-policy.yaml, AGENTS.md, pyproject.toml, and tests/test_app.py (Score: 0/100 -> 100/100).";
-            bannerScore.textContent = "Score: 100/100";
+
+          if (currentSampleKey === 'unprepared') {
+            r.summary = "✨ Successfully Auto-Onboarded: Quarantined 2 sensitive paths, synthesized .agent-policy.yaml, AGENTS.md, build spec, and test harness in-place.";
+            r.files = [...initialUnpreparedFiles, ...synthesizedUnpreparedFiles];
+            currentSelectedFileIndex = 3; // select .agent-policy.yaml
+          } else if (currentSampleKey === 'unconfigured') {
+            r.summary = "✨ Successfully Auto-Onboarded: Quarantined infra/prod/main.tf, synthesized zero-trust boundary and AGENTS.md in-place.";
+            r.files = [...initialUnconfiguredFiles, ...synthesizedUnconfiguredFiles];
+            currentSelectedFileIndex = 5; // select .agent-policy.yaml
           }
-        } else {
-          // Revert back to 0
-          r.onboarded = false;
-          r.score = 0;
+
+          if (banner) {
+            banner.className = "p-3 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-900 text-xs flex items-center justify-between gap-2 transition-all";
+            banner.innerHTML = `
+              <div class="flex items-center gap-2">
+                <span class="text-base">✨</span>
+                <span class="font-medium"><strong>Auto-Onboard Complete (100/100)!</strong> Synthesized .agent-policy.yaml &amp; AGENTS.md in-place.</span>
+              </div>
+              <span class="text-[10px] font-mono bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded font-bold">Score: 100/100</span>
+            `;
+          }
+
+          renderSampleRepo();
+        }, 3000);
+        onboardSpinTimers.push(t3);
+
+      } else {
+        // REVERT TO INITIAL (0 or 50)
+        onboardSpinTimers.forEach(t => clearTimeout(t));
+        onboardSpinTimers = [];
+        isSpinning = false;
+
+        r.onboarded = false;
+        r.score = r.initialScore;
+        if (currentSampleKey === 'unprepared') {
           r.badge = "0 / 100 [F - Unprepared]";
           r.badgeClass = "bg-red-100 text-red-800 border-red-200";
           r.summary = "Critical Risk: Plaintext AWS/Stripe keys in .env, unquarantined Terraform, no automated tests, and no AGENTS.md.";
           r.files = JSON.parse(JSON.stringify(initialUnpreparedFiles));
           currentSelectedFileIndex = 0;
-          if (banner) banner.classList.add('hidden');
-        }
-      } else if (currentSampleKey === 'unconfigured') {
-        if (!r.onboarded) {
-          r.onboarded = true;
-          r.score = 100;
-          r.badge = "100 / 100 [A - Enterprise Agent Ready]";
-          r.badgeClass = "bg-emerald-100 text-emerald-800 border-emerald-200";
-          r.summary = "✨ Successfully Auto-Onboarded: Quarantined infra/prod/main.tf, synthesized zero-trust boundary and AGENTS.md in-place.";
-          r.files = [...initialUnconfiguredFiles, ...synthesizedUnconfiguredFiles];
-          currentSelectedFileIndex = 5; // select .agent-policy.yaml
-          if (banner) {
-            banner.classList.remove('hidden');
-            bannerText.textContent = "⚡ readiness fix executed in-place: Synthesized .agent-policy.yaml and AGENTS.md bound to Bazel + Python stack (Score: 50/100 -> 100/100).";
-            bannerScore.textContent = "Score: 100/100";
-          }
-        } else {
-          // Revert back to 50
-          r.onboarded = false;
-          r.score = 50;
+        } else if (currentSampleKey === 'unconfigured') {
           r.badge = "50 / 100 [C - High Blast Risk]";
           r.badgeClass = "bg-amber-100 text-amber-800 border-amber-200";
           r.summary = "Partially Configured: Has Bazel build targets and pytest test suite, but lacks boundary policy (.agent-policy.yaml) and guidelines (AGENTS.md).";
           r.files = JSON.parse(JSON.stringify(initialUnconfiguredFiles));
           currentSelectedFileIndex = 0;
-          if (banner) banner.classList.add('hidden');
         }
-      } else if (currentSampleKey === 'ready') {
-        if (banner) {
-          banner.classList.remove('hidden');
-          bannerText.textContent = "✓ This repository is already certified 100% Agent-Ready with all 4 pillars active.";
-          bannerScore.textContent = "Score: 100/100";
-        }
-      }
 
-      renderSampleRepo();
+        if (banner) banner.classList.add('hidden');
+        renderSampleRepo();
+      }
     }
 
     function runCliSim(cmd) {
