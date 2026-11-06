@@ -9,7 +9,7 @@
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
-    pre, code {
+    pre, code, textarea {
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
     }
   </style>
@@ -86,7 +86,7 @@
               <span class="text-xs font-bold text-red-700 flex items-center gap-1.5">
                 <span class="h-2 w-2 rounded-full bg-red-600"></span> ❌ Unprepared Repo
               </span>
-              <span class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-red-100 text-red-800 border border-red-200">0 / 100</span>
+              <span class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-red-100 text-red-800 border border-red-200" id="card-badge-unprepared">0 / 100</span>
             </div>
             <div class="text-xs font-mono text-slate-700 mt-2 font-semibold">examples/unprepared_service/</div>
             <div class="text-[11px] text-slate-500 mt-1">Exposed .env, unprotected Terraform, no tests, no AGENTS.md</div>
@@ -98,7 +98,7 @@
               <span class="text-xs font-bold text-amber-700 flex items-center gap-1.5">
                 <span class="h-2 w-2 rounded-full bg-amber-500"></span> ⚠️ Partially Configured
               </span>
-              <span class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">50 / 100</span>
+              <span class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200" id="card-badge-unconfigured">50 / 100</span>
             </div>
             <div class="text-xs font-mono text-slate-700 mt-2 font-semibold">examples/unconfigured_service/</div>
             <div class="text-[11px] text-slate-500 mt-1">Has tests and Bazel, but missing policy and agent contracts</div>
@@ -124,16 +124,25 @@
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
           <div>
             <div class="flex items-center gap-2">
-              <span class="font-mono text-xs font-bold px-2 py-0.5 rounded border" id="repo-badge">0 / 100 [F - Unprepared]</span>
+              <span class="font-mono text-xs font-bold px-2 py-0.5 rounded border transition-all" id="repo-badge">0 / 100 [F - Unprepared]</span>
               <h3 class="font-mono text-sm font-bold text-slate-900" id="repo-title">examples/unprepared_service/</h3>
             </div>
-            <p class="text-xs text-slate-500 mt-0.5" id="repo-summary">Critical blast-radius risk: Plaintext credentials exposed and zero agent boundaries.</p>
+            <p class="text-xs text-slate-500 mt-0.5 transition-all" id="repo-summary">Critical blast-radius risk: Plaintext credentials exposed and zero agent boundaries.</p>
           </div>
           <div class="flex items-center gap-2">
-            <button onclick="autoOnboardCurrentRepo()" id="btn-fix-current" class="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-sm transition flex items-center gap-1">
-              <span>⚡</span> Auto-Onboard to 100/100 (readiness fix)
+            <button onclick="autoOnboardCurrentRepo()" id="btn-fix-current" class="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-sm transition-all flex items-center gap-1.5">
+              <span>⚡</span> <span id="btn-fix-label">Auto-Onboard to 100/100 (readiness fix)</span>
             </button>
           </div>
+        </div>
+
+        <!-- In-Place Auto-Onboard Banner -->
+        <div id="onboard-banner" class="hidden p-3 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-900 text-xs flex items-center justify-between gap-2 transition-all">
+          <div class="flex items-center gap-2">
+            <span class="text-base">⚡</span>
+            <span id="banner-text" class="font-medium">Auto-onboarded in-place! Synthesized .agent-policy.yaml and AGENTS.md.</span>
+          </div>
+          <span id="banner-score" class="text-[10px] font-mono bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded font-bold">Score: 100/100</span>
         </div>
 
         <!-- 2-Column Inspector: File Tree vs File Viewer -->
@@ -143,18 +152,18 @@
           <div class="lg:col-span-4 bg-slate-50 rounded-lg border border-slate-200 p-3 space-y-2">
             <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex justify-between items-center">
               <span>Repository File Tree</span>
-              <span class="text-[10px] text-slate-400">Click a file to inspect</span>
+              <span class="text-[10px] text-slate-400">Click to inspect / edit</span>
             </div>
             <div class="space-y-1 font-mono text-xs" id="file-tree-container">
               <!-- Dynamically populated files -->
             </div>
           </div>
 
-          <!-- Right Column (8 cols): File Content & Agent Safety Analysis -->
+          <!-- Right Column (8 cols): Interactive Editor & Agent Impact -->
           <div class="lg:col-span-8 space-y-4">
 
             <!-- Agent Safety Analysis Card -->
-            <div id="safety-card" class="p-3.5 rounded-lg border flex items-start gap-3 bg-red-50 border-red-200">
+            <div id="safety-card" class="p-3.5 rounded-lg border flex items-start gap-3 bg-red-50 border-red-200 transition-all">
               <div class="text-xl" id="safety-icon">🚨</div>
               <div class="text-xs">
                 <div class="font-bold text-red-900 uppercase tracking-wide" id="safety-title">Critical Security Risk Detected</div>
@@ -164,14 +173,29 @@
               </div>
             </div>
 
-            <!-- Real File Code Preview -->
+            <!-- Live Interactive Code Editor -->
             <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
-              <div class="bg-slate-100/80 px-4 py-2 border-b border-slate-200 flex justify-between items-center text-xs">
-                <span class="font-mono text-slate-700 font-semibold" id="preview-filename">.env</span>
-                <span class="text-[11px] font-mono text-slate-500" id="preview-role">Production Credentials</span>
+              <div class="bg-slate-100/90 px-4 py-2 border-b border-slate-200 flex flex-wrap justify-between items-center gap-2 text-xs">
+                <div class="flex items-center space-x-2">
+                  <span class="font-mono text-slate-900 font-bold" id="preview-filename">.env</span>
+                  <span class="text-[11px] font-mono text-slate-600 bg-slate-200/70 px-2 py-0.5 rounded" id="preview-role">Production Credentials</span>
+                  <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded" id="preview-badge">EXPOSED</span>
+                </div>
+                <div class="flex items-center space-x-2 text-[11px] text-slate-500">
+                  <span class="flex items-center gap-1 text-blue-600 font-medium">
+                    <span>✏️</span> Live Interactive Editor
+                  </span>
+                  <span class="text-slate-300">|</span>
+                  <span id="editor-line-count" class="font-mono text-[10px]">3 lines</span>
+                </div>
               </div>
-              <pre id="preview-code" class="p-4 text-xs font-mono text-slate-800 bg-white overflow-x-auto leading-relaxed max-h-72"></pre>
+              <textarea id="editor-textarea" spellcheck="false" oninput="handleEditorInput(this.value)" class="w-full font-mono text-xs text-slate-800 bg-white p-4 border-0 focus:ring-0 outline-none resize-none leading-relaxed min-h-[260px] max-h-[380px] overflow-y-auto block"></textarea>
+              <div class="bg-slate-50 px-4 py-1.5 border-t border-slate-100 flex justify-between items-center text-[10px] text-slate-400 font-mono">
+                <span>UTF-8 &bull; In-Browser Live Code Modification</span>
+                <span>Type directly in the editor above to modify file contents</span>
+              </div>
             </div>
+
           </div>
         </div>
       </div>
@@ -294,10 +318,10 @@
                   <div class="text-[11px] font-normal text-slate-500 mt-0.5">25 Points</div>
                 </td>
                 <td class="py-3 px-4 text-red-800 bg-red-50/30">
-                  <strong>Missing <code class="bg-red-100 text-red-900 px-1 py-0.5 rounded">AGENTS.md</code>:</strong> Agent guesses project conventions, edits wrong modules, invents non-existent build steps, and wastes reasoning tokens exploring dead paths.
+                  <strong>Missing guidelines &amp; architecture:</strong> Agent guesses conventions, violates layer boundaries, invents invalid build steps, and wastes tokens exploring dead paths.
                 </td>
                 <td class="py-3 px-4 text-emerald-900 bg-emerald-50/30">
-                  <strong>Explicit Guidelines (<code class="bg-emerald-100 text-emerald-900 px-1 py-0.5 rounded">AGENTS.md</code>):</strong> Declares repository build stack, exact test execution commands, code conventions, and permission tier boundaries.
+                  <strong>Explicit Contract (<code class="bg-emerald-100 text-emerald-900 px-1 py-0.5 rounded">AGENTS.md</code>):</strong> Anchored in ARCHITECTURE.md and DESIGN.md. Declares build stack, test commands, code conventions, and permission tier boundaries.
                 </td>
               </tr>
               <tr>
@@ -404,154 +428,226 @@
       }
     }
 
-    // Detailed repository definitions with real file contents
+    // Initial base files for unprepared
+    const initialUnpreparedFiles = [
+      {
+        name: ".env",
+        icon: "🚨",
+        status: "EXPOSED",
+        statusClass: "bg-red-100 text-red-700 font-bold",
+        role: "Plaintext Production Secrets",
+        code: `STRIPE_SECRET_KEY=sk_live_998877665544332211\nAWS_SECRET_ACCESS_KEY=AKIAIOSFODNN7EXAMPLE\nDATABASE_URL=postgres://admin:secret@prod-db.internal:5432/main`,
+        safetyTitle: "Critical Security Flaw: Exposed Secrets",
+        safetyDesc: "Without a zero-trust policy (.agent-policy.yaml), autonomous agents read this file freely and leak production secrets into prompt completions or telemetry logs.",
+        safetyIcon: "🚨",
+        safetyClass: "bg-red-50 border-red-200 text-red-900"
+      },
+      {
+        name: "infra/prod/main.tf",
+        icon: "🚨",
+        status: "DANGER",
+        statusClass: "bg-red-100 text-red-700 font-bold",
+        role: "Unprotected Production Terraform",
+        code: `provider "aws" {\n  region = "us-east-1"\n}\n\nresource "aws_rds_cluster" "production_db" {\n  cluster_identifier = "prod-aurora-cluster"\n  database_name      = "customer_records"\n}`,
+        safetyTitle: "Critical Infrastructure Risk: Unquarantined Cloud DB",
+        safetyDesc: "An autonomous agent attempting to solve an issue could modify or delete this production Aurora cluster without boundary interception.",
+        safetyIcon: "⚠️",
+        safetyClass: "bg-red-50 border-red-200 text-red-900"
+      },
+      {
+        name: "src/app.py",
+        icon: "📄",
+        status: "UNPINNED",
+        statusClass: "bg-amber-100 text-amber-700 font-bold",
+        role: "Unpinned Application Code",
+        code: `import os\n\ndef process_payment(amount: float) -> dict:\n    # Danger: Reading raw unparsed environment\n    secret = os.getenv("STRIPE_SECRET_KEY", "sk_live_dummy")\n    return {"status": "paid", "amount": amount}`,
+        safetyTitle: "Warning: Missing Reproducible Build",
+        safetyDesc: "There is no pyproject.toml or requirements lockfile. Autonomous agents will guess package managers or break system dependencies.",
+        safetyIcon: "⚠️",
+        safetyClass: "bg-amber-50 border-amber-200 text-amber-900"
+      }
+    ];
+
+    // Generated files when unprepared is auto-onboarded
+    const synthesizedUnpreparedFiles = [
+      {
+        name: ".agent-policy.yaml",
+        icon: "🛡️",
+        status: "✨ AUTO-GENERATED",
+        statusClass: "bg-emerald-100 text-emerald-800 font-bold",
+        role: "Zero-Trust Boundary (Synthesized)",
+        isGenerated: true,
+        code: `# Zero-Trust AI Agent Policy Contract\n# Synthesized in-place by readiness fix\nversion: "1.0"\npermission_tier: sandbox_write\nenforcement: strict\n\nprotected_paths:\n  - .agent-policy.yaml\n  - infra/prod/\n  - .env\n\nallowed_tools:\n  - file_read\n  - file_edit\n  - run_command\n\ncommand_rules:\n  allowed:\n    - "pytest*"\n    - "ruff*"\n  banned:\n    - "rm -rf*"\n    - "*curl*|*sh*"\n    - "git push --force*"\n\nverification_hooks:\n  pre_commit_gate: "pytest -v tests/"`,
+        safetyTitle: "✨ Auto-Onboarded: Zero-Trust Blast Radius Protection",
+        safetyDesc: "Quarantines .env and infra/prod/. Any attempt by autonomous agents to modify credentials or cloud infrastructure is intercepted and blocked.",
+        safetyIcon: "🛡️",
+        safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
+      },
+      {
+        name: "AGENTS.md",
+        icon: "🤖",
+        status: "✨ AUTO-GENERATED",
+        statusClass: "bg-emerald-100 text-emerald-800 font-bold",
+        role: "Operating Guidelines Contract (Synthesized)",
+        isGenerated: true,
+        code: `# Agent Operating Guidelines & Harness Contract\n# Synthesized in-place by readiness fix\n\n## 1. Multi-Tier Verification Ladder\n- Tier 1: Fast Unit Loop (pytest tests/)\n- Tier 2: Static Analysis (ruff check src/)\n- Tier 3: Full Regression Gate (pytest -v tests/)\n\n## 2. Boundaries & Quarantined Paths\n- Read-Only: infra/prod/, .env, .agent-policy.yaml\n- Invariant: Never commit or mark task complete if tests fail.`,
+        safetyTitle: "✨ Auto-Onboarded: Agent Operating Guidelines Active",
+        safetyDesc: "Eliminates agent guesswork. Specifies exact verification commands and strictly enforces the sandbox write boundary.",
+        safetyIcon: "🤖",
+        safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
+      },
+      {
+        name: "pyproject.toml",
+        icon: "⚙️",
+        status: "✨ AUTO-GENERATED",
+        statusClass: "bg-emerald-100 text-emerald-800 font-bold",
+        role: "PEP 621 Build Specification (Synthesized)",
+        isGenerated: true,
+        code: `[project]\nname = "unprepared-service"\nversion = "0.1.0"\ndependencies = [\n    "pydantic>=2.0",\n    "pytest>=8.0",\n]\n\n[tool.pytest.ini_options]\ntestpaths = ["tests"]\npythonpath = ["."]`,
+        safetyTitle: "✨ Auto-Onboarded: Pinned Build Environment",
+        safetyDesc: "Explicit virtual environment dependencies prevent the agent from hallucinating unpinned third-party libraries.",
+        safetyIcon: "✓",
+        safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
+      },
+      {
+        name: "tests/test_app.py",
+        icon: "🧪",
+        status: "✨ AUTO-GENERATED",
+        statusClass: "bg-emerald-100 text-emerald-800 font-bold",
+        role: "Deterministic Verification Test Suite",
+        isGenerated: true,
+        code: `import pytest\nfrom src.app import process_payment\n\ndef test_process_payment_valid():\n    res = process_payment(50.0)\n    assert res["status"] == "paid"\n    assert res["amount"] == 50.0`,
+        safetyTitle: "✨ Auto-Onboarded: Deterministic Verification Loop",
+        safetyDesc: "Provides the model with an automated pytest feedback loop so it can self-verify changes before opening PRs.",
+        safetyIcon: "🧪",
+        safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
+      }
+    ];
+
+    // Initial base files for unconfigured
+    const initialUnconfiguredFiles = [
+      {
+        name: "BUILD.bazel",
+        icon: "⚙️",
+        status: "CONFIGURED",
+        statusClass: "bg-emerald-100 text-emerald-700",
+        role: "Bazel Workspace Target",
+        code: `py_library(\n    name = "handler_lib",\n    srcs = ["src/handler.py"],\n)`,
+        safetyTitle: "Pass: Bazel Target Configured",
+        safetyDesc: "Monorepo build target is explicit and reproducible.",
+        safetyIcon: "✓",
+        safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
+      },
+      {
+        name: "pyproject.toml",
+        icon: "⚙️",
+        status: "CONFIGURED",
+        statusClass: "bg-emerald-100 text-emerald-700",
+        role: "Python Build Specification",
+        code: `[project]\nname = "unconfigured-service"\nversion = "0.1.0"\ndependencies = []`,
+        safetyTitle: "Pass: Build Spec Present",
+        safetyDesc: "Build configuration detected. The agent knows how to identify the project root.",
+        safetyIcon: "✓",
+        safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
+      },
+      {
+        name: "tests/test_handler.py",
+        icon: "🧪",
+        status: "CONFIGURED",
+        statusClass: "bg-emerald-100 text-emerald-700",
+        role: "Automated Test Harness",
+        code: `from src.handler import handle_event\n\ndef test_handle_event():\n    res = handle_event({"id": "ev-1"})\n    assert res["status"] == "ok"\n    assert res["event_id"] == "ev-1"`,
+        safetyTitle: "Pass: Automated Test Verification Harness",
+        safetyDesc: "Agent can execute pytest to verify modifications in a tight test-driven development loop.",
+        safetyIcon: "✓",
+        safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
+      },
+      {
+        name: "src/handler.py",
+        icon: "📄",
+        status: "CONFIGURED",
+        statusClass: "bg-emerald-100 text-emerald-700",
+        role: "Service Handler Logic",
+        code: `def handle_event(payload: dict) -> dict:\n    return {"status": "ok", "event_id": payload.get("id")}`,
+        safetyTitle: "Pass: Valid Service Logic",
+        safetyDesc: "Clean Python function with input/output contracts.",
+        safetyIcon: "✓",
+        safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
+      },
+      {
+        name: "infra/prod/main.tf",
+        icon: "🚨",
+        status: "UNPROTECTED",
+        statusClass: "bg-red-100 text-red-700 font-bold",
+        role: "Production Cloud Infrastructure",
+        code: `provider "aws" {\n  region = "us-east-1"\n}\n\nresource "aws_s3_bucket" "prod_assets" {\n  bucket = "prod-service-assets-bucket"\n}`,
+        safetyTitle: "Vulnerable: Production Infrastructure Unquarantined",
+        safetyDesc: "Missing .agent-policy.yaml. An autonomous agent can modify or delete production S3 buckets.",
+        safetyIcon: "⚠️",
+        safetyClass: "bg-amber-50 border-amber-200 text-amber-900"
+      }
+    ];
+
+    // Generated files when unconfigured is auto-onboarded
+    const synthesizedUnconfiguredFiles = [
+      {
+        name: ".agent-policy.yaml",
+        icon: "🛡️",
+        status: "✨ AUTO-GENERATED",
+        statusClass: "bg-emerald-100 text-emerald-800 font-bold",
+        role: "Zero-Trust Boundary (Synthesized)",
+        isGenerated: true,
+        code: `# Zero-Trust AI Agent Policy Contract\n# Synthesized in-place by readiness fix\nversion: "1.0"\npermission_tier: sandbox_write\nenforcement: strict\n\nprotected_paths:\n  - .agent-policy.yaml\n  - infra/prod/main.tf\n\nallowed_tools:\n  - file_read\n  - file_edit\n  - run_command\n\ncommand_rules:\n  banned:\n    - "rm -rf*"\n    - "*curl*|*sh*"\n    - "git push --force*"\n\nverification_hooks:\n  pre_commit_gate: "bazel test //... && pytest tests/"`,
+        safetyTitle: "✨ Auto-Onboarded: Zero-Trust Boundary Established",
+        safetyDesc: "Synthesized in-place by readiness fix. Quarantines infra/prod/main.tf from autonomous agent mutations.",
+        safetyIcon: "🛡️",
+        safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
+      },
+      {
+        name: "AGENTS.md",
+        icon: "🤖",
+        status: "✨ AUTO-GENERATED",
+        statusClass: "bg-emerald-100 text-emerald-800 font-bold",
+        role: "Operating Guidelines Contract (Synthesized)",
+        isGenerated: true,
+        code: `# Agent Operating Guidelines & Harness Contract\n# Synthesized in-place by readiness fix\n\n## 1. Stack & Build Specifications\n- Monorepo: Bazel (BUILD.bazel)\n- Python: PEP 621 (pyproject.toml)\n- Verification: pytest tests/ and bazel test //...\n\n## 2. Multi-Tier Verification Ladder\n- Tier 1: Fast handler test (pytest tests/test_handler.py)\n- Tier 2: Monorepo build check (bazel build //...)\n\n## 3. Quarantined Boundaries\n- Read-Only: infra/prod/main.tf, .agent-policy.yaml`,
+        safetyTitle: "✨ Auto-Onboarded: Bazel & Python Operating Contract",
+        safetyDesc: "Eliminates guesswork by documenting canonical Bazel and pytest verification commands.",
+        safetyIcon: "🤖",
+        safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
+      }
+    ];
+
+    // Master sample repository states
     const sampleRepos = {
       unprepared: {
         path: "examples/unprepared_service/",
+        initialScore: 0,
+        score: 0,
         badge: "0 / 100 [F - Unprepared]",
         badgeClass: "bg-red-100 text-red-800 border-red-200",
         summary: "Critical Risk: Plaintext AWS/Stripe keys in .env, unquarantined Terraform, no automated tests, and no AGENTS.md.",
-        score: 0,
-        files: [
-          {
-            name: ".env",
-            icon: "🚨",
-            status: "DANGER",
-            statusClass: "bg-red-100 text-red-700",
-            role: "Plaintext Production Secrets",
-            code: `STRIPE_SECRET_KEY=sk_live_998877665544332211\nAWS_SECRET_ACCESS_KEY=AKIAIOSFODNN7EXAMPLE\nDATABASE_URL=postgres://admin:secret@prod-db.internal:5432/main`,
-            safetyTitle: "Critical Security Flaw: Exposed Secrets",
-            safetyDesc: "Without a zero-trust policy (.agent-policy.yaml), autonomous agents read this file freely and leak production secrets into prompt completions or telemetry logs.",
-            safetyIcon: "🚨",
-            safetyClass: "bg-red-50 border-red-200 text-red-900"
-          },
-          {
-            name: "infra/prod/main.tf",
-            icon: "🚨",
-            status: "DANGER",
-            statusClass: "bg-red-100 text-red-700",
-            role: "Unprotected Production Terraform",
-            code: `provider "aws" {\n  region = "us-east-1"\n}\n\nresource "aws_rds_cluster" "production_db" {\n  cluster_identifier = "prod-aurora-cluster"\n  database_name      = "customer_records"\n}`,
-            safetyTitle: "Critical Infrastructure Risk: Unquarantined Cloud DB",
-            safetyDesc: "An autonomous agent attempting to solve an issue could modify or delete this production Aurora cluster without boundary interception.",
-            safetyIcon: "⚠️",
-            safetyClass: "bg-red-50 border-red-200 text-red-900"
-          },
-          {
-            name: "src/app.py",
-            icon: "📄",
-            status: "UNPINNED",
-            statusClass: "bg-amber-100 text-amber-700",
-            role: "Unpinned Application Code",
-            code: `import os\n\ndef process_payment(amount: float) -> dict:\n    # Danger: Reading raw unparsed environment\n    secret = os.getenv("STRIPE_SECRET_KEY", "sk_live_dummy")\n    return {"status": "paid", "amount": amount}`,
-            safetyTitle: "Warning: Missing Reproducible Build",
-            safetyDesc: "There is no pyproject.toml or requirements lockfile. Autonomous agents will guess package managers or break system dependencies.",
-            safetyIcon: "⚠️",
-            safetyClass: "bg-amber-50 border-amber-200 text-amber-900"
-          },
-          {
-            name: "AGENTS.md",
-            icon: "❌",
-            status: "MISSING",
-            statusClass: "bg-red-100 text-red-700",
-            role: "Agent Guidelines Contract",
-            code: `# FILE MISSING!\n# The agent has zero guidelines regarding architectural patterns,\n# permitted commands, or coding conventions. It will wander across the repo.`,
-            safetyTitle: "Missing Agent Operating Contract",
-            safetyDesc: "Agents require an explicit AGENTS.md to know build commands, test runners, and architectural boundaries. Without it, agent iteration cost multiplies 10x.",
-            safetyIcon: "❌",
-            safetyClass: "bg-red-50 border-red-200 text-red-900"
-          },
-          {
-            name: "tests/",
-            icon: "❌",
-            status: "MISSING",
-            statusClass: "bg-red-100 text-red-700",
-            role: "Verification Test Harness",
-            code: `# DIRECTORY MISSING!\n# No test files found.\n# The agent cannot verify if its code changes work or break existing functionality.`,
-            safetyTitle: "Missing Verification Feedback Loop",
-            safetyDesc: "Without an automated test suite (pytest), agents declare victory prematurely without verifying that synthesized code parses or runs.",
-            safetyIcon: "❌",
-            safetyClass: "bg-red-50 border-red-200 text-red-900"
-          }
-        ]
+        onboarded: false,
+        files: JSON.parse(JSON.stringify(initialUnpreparedFiles))
       },
-
       unconfigured: {
         path: "examples/unconfigured_service/",
+        initialScore: 50,
+        score: 50,
         badge: "50 / 100 [C - High Blast Risk]",
         badgeClass: "bg-amber-100 text-amber-800 border-amber-200",
         summary: "Partially Configured: Has Bazel build targets and pytest test suite, but lacks boundary policy (.agent-policy.yaml) and guidelines (AGENTS.md).",
-        score: 50,
-        files: [
-          {
-            name: "pyproject.toml",
-            icon: "⚙️",
-            status: "CONFIGURED",
-            statusClass: "bg-emerald-100 text-emerald-700",
-            role: "Python Build Specification",
-            code: `[project]\nname = "unconfigured-service"\nversion = "0.1.0"\ndependencies = []`,
-            safetyTitle: "Pass: Build Spec Present",
-            safetyDesc: "Build configuration detected. The agent knows how to identify the project root.",
-            safetyIcon: "✓",
-            safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
-          },
-          {
-            name: "BUILD.bazel",
-            icon: "⚙️",
-            status: "CONFIGURED",
-            statusClass: "bg-emerald-100 text-emerald-700",
-            role: "Bazel Workspace Target",
-            code: `py_library(\n    name = "handler_lib",\n    srcs = ["src/handler.py"],\n)`,
-            safetyTitle: "Pass: Bazel Target Configured",
-            safetyDesc: "Monorepo build target is explicit and reproducible.",
-            safetyIcon: "✓",
-            safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
-          },
-          {
-            name: "tests/test_handler.py",
-            icon: "🧪",
-            status: "CONFIGURED",
-            statusClass: "bg-emerald-100 text-emerald-700",
-            role: "Automated Test Harness",
-            code: `from src.handler import handle_event\n\ndef test_handle_event():\n    res = handle_event({"id": "ev-1"})\n    assert res["status"] == "ok"\n    assert res["event_id"] == "ev-1"`,
-            safetyTitle: "Pass: Automated Test Verification Harness",
-            safetyDesc: "Agent can execute pytest to verify modifications in a tight test-driven development loop.",
-            safetyIcon: "✓",
-            safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
-          },
-          {
-            name: "infra/prod/main.tf",
-            icon: "🚨",
-            status: "UNPROTECTED",
-            statusClass: "bg-red-100 text-red-700",
-            role: "Production Cloud Infrastructure",
-            code: `provider "aws" {\n  region = "us-east-1"\n}\n\nresource "aws_s3_bucket" "prod_assets" {\n  bucket = "prod-service-assets-bucket"\n}`,
-            safetyTitle: "Vulnerable: Production Infrastructure Unquarantined",
-            safetyDesc: "Missing .agent-policy.yaml. An autonomous agent can modify or delete production S3 buckets.",
-            safetyIcon: "⚠️",
-            safetyClass: "bg-amber-50 border-amber-200 text-amber-900"
-          },
-          {
-            name: "AGENTS.md",
-            icon: "❌",
-            status: "MISSING",
-            statusClass: "bg-red-100 text-red-700",
-            role: "Operating Guidelines Contract",
-            code: `# FILE MISSING!\n# Run 'readiness fix' to synthesize AGENTS.md.`,
-            safetyTitle: "Missing Agent Operating Rules",
-            safetyDesc: "Agent has no permission tiers and cannot determine if it is permitted to execute shell commands.",
-            safetyIcon: "❌",
-            safetyClass: "bg-red-50 border-red-200 text-red-900"
-          }
-        ]
+        onboarded: false,
+        files: JSON.parse(JSON.stringify(initialUnconfiguredFiles))
       },
-
       ready: {
         path: "examples/agent_ready_service/",
+        initialScore: 100,
+        score: 100,
         badge: "100 / 100 [A - Enterprise Agent Ready]",
         badgeClass: "bg-emerald-100 text-emerald-800 border-emerald-200",
         summary: "Gold-Standard Agent-Ready Codebase: Zero-trust policy (.agent-policy.yaml), explicit operating contract (AGENTS.md) anchored in ARCHITECTURE.md & DESIGN.md, with multi-tier verification.",
-        score: 100,
+        onboarded: true,
         files: [
           {
             name: ".agent-policy.yaml",
@@ -670,6 +766,10 @@
         else activeBtn.className = "repo-card-btn text-left p-4 rounded-xl border-2 border-emerald-600 bg-emerald-50/40 text-slate-900 shadow-sm transition";
       }
 
+      // Hide notification banner on repo switch
+      const banner = document.getElementById('onboard-banner');
+      if (banner) banner.classList.add('hidden');
+
       renderSampleRepo();
     }
 
@@ -677,18 +777,38 @@
       const r = sampleRepos[currentSampleKey];
       document.getElementById('repo-title').textContent = r.path;
       document.getElementById('repo-badge').textContent = r.badge;
-      document.getElementById('repo-badge').className = "font-mono text-xs font-bold px-2 py-0.5 rounded border " + r.badgeClass;
+      document.getElementById('repo-badge').className = "font-mono text-xs font-bold px-2 py-0.5 rounded border transition-all " + r.badgeClass;
       document.getElementById('repo-summary').textContent = r.summary;
 
+      // Update card badge above
+      const cardBadge = document.getElementById('card-badge-' + currentSampleKey);
+      if (cardBadge) {
+        cardBadge.textContent = r.score + " / 100";
+        if (r.score === 100) {
+          cardBadge.className = "font-mono text-xs font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200";
+        } else if (r.score >= 50) {
+          cardBadge.className = "font-mono text-xs font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200";
+        } else {
+          cardBadge.className = "font-mono text-xs font-bold px-2 py-0.5 rounded bg-red-100 text-red-800 border border-red-200";
+        }
+      }
+
+      // Update action button
       const btnFix = document.getElementById('btn-fix-current');
-      if (r.score === 100) {
+      const btnLabel = document.getElementById('btn-fix-label');
+
+      if (currentSampleKey === 'ready') {
         btnFix.disabled = true;
-        btnFix.className = "px-3.5 py-1.5 rounded-lg bg-emerald-100 text-emerald-800 font-semibold text-xs border border-emerald-300 cursor-not-allowed flex items-center gap-1";
-        btnFix.innerHTML = "<span>&check;</span> Repository 100% Agent Ready";
+        btnFix.className = "px-3.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 font-semibold text-xs border border-emerald-200 cursor-default flex items-center gap-1.5";
+        btnLabel.textContent = "✓ Certified Agent-Ready (100/100)";
+      } else if (r.onboarded) {
+        btnFix.disabled = false;
+        btnFix.className = "px-3.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs border border-slate-300 transition-all flex items-center gap-1.5 shadow-xs";
+        btnLabel.textContent = `↺ Revert to Initial (${r.initialScore}/100)`;
       } else {
         btnFix.disabled = false;
-        btnFix.className = "px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-sm transition flex items-center gap-1";
-        btnFix.innerHTML = "<span>⚡</span> Auto-Onboard to 100/100 (readiness fix)";
+        btnFix.className = "px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-sm transition-all flex items-center gap-1.5";
+        btnLabel.textContent = `⚡ Auto-Onboard to 100/100 (readiness fix)`;
       }
 
       // Render Tree
@@ -724,18 +844,94 @@
 
       document.getElementById('preview-filename').textContent = f.name;
       document.getElementById('preview-role').textContent = f.role;
-      document.getElementById('preview-code').textContent = f.code;
+      document.getElementById('preview-badge').textContent = f.status;
+      document.getElementById('preview-badge').className = "text-[10px] font-mono font-bold px-2 py-0.5 rounded " + f.statusClass;
+
+      const textarea = document.getElementById('editor-textarea');
+      textarea.value = f.code;
+      const lines = f.code.split('\n').length;
+      document.getElementById('editor-line-count').textContent = lines + " lines";
 
       const card = document.getElementById('safety-card');
-      card.className = "p-3.5 rounded-lg border flex items-start gap-3 " + f.safetyClass;
+      card.className = "p-3.5 rounded-lg border flex items-start gap-3 transition-all " + f.safetyClass;
       document.getElementById('safety-icon').textContent = f.safetyIcon;
       document.getElementById('safety-title').textContent = f.safetyTitle;
       document.getElementById('safety-desc').textContent = f.safetyDesc;
     }
 
+    function handleEditorInput(val) {
+      const r = sampleRepos[currentSampleKey];
+      const f = r.files[currentSelectedFileIndex] || r.files[0];
+      f.code = val;
+      const lines = val.split('\n').length;
+      document.getElementById('editor-line-count').textContent = lines + " lines";
+    }
+
     function autoOnboardCurrentRepo() {
-      // Simulate readiness fix: elevates to Agent Ready
-      selectSampleRepo('ready');
+      const r = sampleRepos[currentSampleKey];
+      const banner = document.getElementById('onboard-banner');
+      const bannerText = document.getElementById('banner-text');
+      const bannerScore = document.getElementById('banner-score');
+
+      if (currentSampleKey === 'unprepared') {
+        if (!r.onboarded) {
+          r.onboarded = true;
+          r.score = 100;
+          r.badge = "100 / 100 [A - Enterprise Agent Ready]";
+          r.badgeClass = "bg-emerald-100 text-emerald-800 border-emerald-200";
+          r.summary = "✨ Successfully Auto-Onboarded: Quarantined 2 sensitive paths, synthesized .agent-policy.yaml, AGENTS.md, build spec, and test harness in-place.";
+          r.files = [...initialUnpreparedFiles, ...synthesizedUnpreparedFiles];
+          currentSelectedFileIndex = 3; // select .agent-policy.yaml
+          if (banner) {
+            banner.classList.remove('hidden');
+            bannerText.textContent = "⚡ readiness fix executed in-place: Synthesized .agent-policy.yaml, AGENTS.md, pyproject.toml, and tests/test_app.py (Score: 0/100 -> 100/100).";
+            bannerScore.textContent = "Score: 100/100";
+          }
+        } else {
+          // Revert back to 0
+          r.onboarded = false;
+          r.score = 0;
+          r.badge = "0 / 100 [F - Unprepared]";
+          r.badgeClass = "bg-red-100 text-red-800 border-red-200";
+          r.summary = "Critical Risk: Plaintext AWS/Stripe keys in .env, unquarantined Terraform, no automated tests, and no AGENTS.md.";
+          r.files = JSON.parse(JSON.stringify(initialUnpreparedFiles));
+          currentSelectedFileIndex = 0;
+          if (banner) banner.classList.add('hidden');
+        }
+      } else if (currentSampleKey === 'unconfigured') {
+        if (!r.onboarded) {
+          r.onboarded = true;
+          r.score = 100;
+          r.badge = "100 / 100 [A - Enterprise Agent Ready]";
+          r.badgeClass = "bg-emerald-100 text-emerald-800 border-emerald-200";
+          r.summary = "✨ Successfully Auto-Onboarded: Quarantined infra/prod/main.tf, synthesized zero-trust boundary and AGENTS.md in-place.";
+          r.files = [...initialUnconfiguredFiles, ...synthesizedUnconfiguredFiles];
+          currentSelectedFileIndex = 5; // select .agent-policy.yaml
+          if (banner) {
+            banner.classList.remove('hidden');
+            bannerText.textContent = "⚡ readiness fix executed in-place: Synthesized .agent-policy.yaml and AGENTS.md bound to Bazel + Python stack (Score: 50/100 -> 100/100).";
+            bannerScore.textContent = "Score: 100/100";
+          }
+        } else {
+          // Revert back to 50
+          r.onboarded = false;
+          r.score = 50;
+          r.badge = "50 / 100 [C - High Blast Risk]";
+          r.badgeClass = "bg-amber-100 text-amber-800 border-amber-200";
+          r.summary = "Partially Configured: Has Bazel build targets and pytest test suite, but lacks boundary policy (.agent-policy.yaml) and guidelines (AGENTS.md).";
+          r.files = JSON.parse(JSON.stringify(initialUnconfiguredFiles));
+          currentSelectedFileIndex = 0;
+          if (banner) banner.classList.add('hidden');
+        }
+      } else if (currentSampleKey === 'ready') {
+        if (banner) {
+          banner.classList.remove('hidden');
+          bannerText.textContent = "✓ This repository is already certified 100% Agent-Ready with all 4 pillars active.";
+          bannerScore.textContent = "Score: 100/100";
+        }
+      }
+
+      renderSampleRepo();
     }
 
     function runCliSim(cmd) {
