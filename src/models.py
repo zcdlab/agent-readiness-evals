@@ -14,6 +14,7 @@ class ReadinessPillar(BaseModel):
     max_score: int = 25
     passed: bool
     details: str
+    recommendations: list[str] = Field(default_factory=list)
 
 
 class ReadinessReport(BaseModel):
@@ -27,3 +28,5 @@ class ReadinessReport(BaseModel):
     missing_safeguards: list[str] = Field(default_factory=list)
     generated_policy_yaml: str = ""
     generated_agents_md: str = ""
+    scan_duration_ms: float = 0.0
+

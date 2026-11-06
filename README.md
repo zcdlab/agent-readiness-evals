@@ -53,22 +53,34 @@ Try the interactive control plane in your browser:
 
 ## 💻 Standalone CLI Usage
 
-The package installs the standalone binary `readiness`:
+The package installs the standalone binary `readiness` (also available as `agent-readiness`):
 
 ```bash
 # 1. Scan any repository and output readiness score & rubric breakdown
-readiness scan examples/unconfigured_service
+readiness scan /path/to/my-repo
 
 # 2. Output machine-readable JSON for CI/CD gates
-readiness scan examples/unconfigured_service --json
+readiness scan /path/to/my-repo --json
 
-# 3. Auto-onboard repository (synthesizes .agent-policy.yaml & AGENTS.md, raising score to 100/100)
-readiness fix examples/unconfigured_service
+# 3. Output GitHub Markdown readiness report (ideal for PR comments or CI summaries)
+readiness scan /path/to/my-repo --markdown
 
-# 4. Auto-onboard with live LLM contract synthesis (OpenAI, Gemini, Anthropic)
-readiness fix examples/unconfigured_service --llm
+# 4. Enforce readiness threshold in CI pipelines (exits code 1 if score < 75)
+readiness scan /path/to/my-repo --min-score 75
 
-# 5. Open interactive Web Control Plane
+# 5. Preview auto-onboarding contracts without writing to disk
+readiness fix /path/to/my-repo --dry-run
+
+# 6. Auto-onboard repository (synthesizes .agent-policy.yaml & AGENTS.md, raising score to 100/100)
+readiness fix /path/to/my-repo
+
+# 7. Auto-onboard with live LLM contract synthesis (OpenAI, Gemini, Anthropic)
+readiness fix /path/to/my-repo --llm
+
+# 8. Initialize agent readiness contracts in a new or existing repository
+readiness init /path/to/my-repo
+
+# 9. Open interactive Web Control Plane
 readiness ui
 ```
 
