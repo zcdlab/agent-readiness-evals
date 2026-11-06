@@ -75,3 +75,9 @@ def test_demo_diff_renderer_functions_declared():
     assert "function computeReadinessDiff" in content, "Missing function computeReadinessDiff"
     assert "function renderDiffTable" in content, "Missing function renderDiffTable"
 
+
+def test_demo_tab1_diff_container_present():
+    content = Path("docs/index.html").read_text()
+    assert 'id="readiness-diff-container"' in content, "Missing #readiness-diff-container in docs/index.html"
+
+
