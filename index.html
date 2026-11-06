@@ -556,6 +556,71 @@
       }
     ];
 
+
+    // Initial base files for unconfigured
+    const initialUnconfiguredFiles = [
+      {
+        name: "BUILD.bazel",
+        icon: "⚙️",
+        status: "CONFIGURED",
+        statusClass: "bg-emerald-100 text-emerald-700",
+        role: "Bazel Workspace Target",
+        code: `py_library(\n    name = "handler_lib",\n    srcs = ["src/handler.py"],\n)`,
+        safetyTitle: "Pass: Bazel Target Configured",
+        safetyDesc: "Monorepo build target is explicit and reproducible.",
+        safetyIcon: "✓",
+        safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
+      },
+      {
+        name: "pyproject.toml",
+        icon: "⚙️",
+        status: "CONFIGURED",
+        statusClass: "bg-emerald-100 text-emerald-700",
+        role: "Python Build Specification",
+        code: `[project]\nname = "unconfigured-service"\nversion = "0.1.0"\ndependencies = []`,
+        safetyTitle: "Pass: Build Spec Present",
+        safetyDesc: "Build configuration detected. The agent knows how to identify the project root.",
+        safetyIcon: "✓",
+        safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
+      },
+      {
+        name: "tests/test_handler.py",
+        icon: "🧪",
+        status: "CONFIGURED",
+        statusClass: "bg-emerald-100 text-emerald-700",
+        role: "Automated Test Harness",
+        code: `from src.handler import handle_event\n\ndef test_handle_event():\n    res = handle_event({"id": "ev-1"})\n    assert res["status"] == "ok"\n    assert res["event_id"] == "ev-1"`,
+        safetyTitle: "Pass: Automated Test Verification Harness",
+        safetyDesc: "Agent can execute pytest to verify modifications in a tight test-driven development loop.",
+        safetyIcon: "✓",
+        safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
+      },
+      {
+        name: "src/handler.py",
+        icon: "📄",
+        status: "CONFIGURED",
+        statusClass: "bg-emerald-100 text-emerald-700",
+        role: "Service Handler Logic",
+        code: `def handle_event(payload: dict) -> dict:\n    return {"status": "ok", "event_id": payload.get("id")}`,
+        safetyTitle: "Pass: Valid Service Logic",
+        safetyDesc: "Clean Python function with input/output contracts.",
+        safetyIcon: "✓",
+        safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
+      },
+      {
+        name: "infra/prod/main.tf",
+        icon: "🚨",
+        status: "UNPROTECTED",
+        statusClass: "bg-red-100 text-red-700 font-bold",
+        role: "Production Cloud Infrastructure",
+        code: `provider "aws" {\n  region = "us-east-1"\n}\n\nresource "aws_s3_bucket" "prod_assets" {\n  bucket = "prod-service-assets-bucket"\n}`,
+        safetyTitle: "Vulnerable: Production Infrastructure Unquarantined",
+        safetyDesc: "Missing .agent-policy.yaml. An autonomous agent can modify or delete production S3 buckets.",
+        safetyIcon: "⚠️",
+        safetyClass: "bg-amber-50 border-amber-200 text-amber-900"
+      }
+    ];
+
     // Onboarded state for unconfigured_service (100% Agent Ready)
     const onboardedUnconfiguredFiles = [
       {
