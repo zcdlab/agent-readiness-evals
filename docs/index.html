@@ -464,8 +464,8 @@
       }
     ];
 
-    // Generated files when unprepared is auto-onboarded
-    const synthesizedUnpreparedFiles = [
+    // Onboarded state for unprepared_service (100% Agent Ready)
+    const onboardedUnpreparedFiles = [
       {
         name: ".agent-policy.yaml",
         icon: "🛡️",
@@ -473,9 +473,9 @@
         statusClass: "bg-emerald-100 text-emerald-800 font-bold",
         role: "Zero-Trust Boundary (Synthesized)",
         isGenerated: true,
-        code: `# Zero-Trust AI Agent Policy Contract\n# Synthesized in-place by readiness fix\nversion: "1.0"\npermission_tier: sandbox_write\nenforcement: strict\n\nprotected_paths:\n  - .agent-policy.yaml\n  - infra/prod/\n  - .env\n\nallowed_tools:\n  - file_read\n  - file_edit\n  - run_command\n\ncommand_rules:\n  allowed:\n    - "pytest*"\n    - "ruff*"\n  banned:\n    - "rm -rf*"\n    - "*curl*|*sh*"\n    - "git push --force*"\n\nverification_hooks:\n  pre_commit_gate: "pytest -v tests/"`,
-        safetyTitle: "✨ Auto-Onboarded: Zero-Trust Blast Radius Protection",
-        safetyDesc: "Quarantines .env and infra/prod/. Any attempt by autonomous agents to modify credentials or cloud infrastructure is intercepted and blocked.",
+        code: `# Zero-Trust AI Agent Policy Contract\n# Synthesized in-place by readiness fix\nversion: "1.0"\npermission_tier: sandbox_write\nenforcement: strict\n\nprotected_paths:\n  - .agent-policy.yaml\n  - infra/prod/main.tf\n  - .env\n\nallowed_tools:\n  - file_read\n  - file_edit\n  - run_command\n\ncommand_rules:\n  banned:\n    - "rm -rf*"\n    - "*curl*|*sh*"\n    - "git push --force*"\n\nverification_hooks:\n  pre_commit_gate: "pytest -v"`,
+        safetyTitle: "✨ Auto-Onboarded: Zero-Trust Boundary Established",
+        safetyDesc: "Synthesized in-place by readiness fix. Quarantines plaintext secrets and prevents destructive terminal commands.",
         safetyIcon: "🛡️",
         safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
       },
@@ -486,9 +486,9 @@
         statusClass: "bg-emerald-100 text-emerald-800 font-bold",
         role: "Operating Guidelines Contract (Synthesized)",
         isGenerated: true,
-        code: `# Agent Operating Guidelines & Harness Contract\n# Synthesized in-place by readiness fix\n\n## 1. Multi-Tier Verification Ladder\n- Tier 1: Fast Unit Loop (pytest tests/)\n- Tier 2: Static Analysis (ruff check src/)\n- Tier 3: Full Regression Gate (pytest -v tests/)\n\n## 2. Boundaries & Quarantined Paths\n- Read-Only: infra/prod/, .env, .agent-policy.yaml\n- Invariant: Never commit or mark task complete if tests fail.`,
-        safetyTitle: "✨ Auto-Onboarded: Agent Operating Guidelines Active",
-        safetyDesc: "Eliminates agent guesswork. Specifies exact verification commands and strictly enforces the sandbox write boundary.",
+        code: `# Agent Operating Guidelines & Harness Contract\n# Synthesized in-place by readiness fix\n\n## 1. System Specifications & Anchors\n- Python: PEP 621 (pyproject.toml)\n- Test Suite: pytest (tests/test_app.py)\n\n## 2. Multi-Tier Deterministic Verification Ladder\n- Tier 1: Fast unit test loop (pytest -v)\n- Tier 2: Static type checks (mypy src/)\n\n## 3. Quarantined Blast-Radius Boundaries\n- The following paths are strictly quarantined:\n  - infra/prod/ (Production Cloud Infrastructure)\n  - .env (Production Secrets)`,
+        safetyTitle: "✨ Auto-Onboarded: Operating Guidelines Contract",
+        safetyDesc: "Synthesized in-place by readiness fix. Documents deterministic verification commands and rules for autonomous agents.",
         safetyIcon: "🤖",
         safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
       },
@@ -499,10 +499,10 @@
         statusClass: "bg-emerald-100 text-emerald-800 font-bold",
         role: "PEP 621 Build Specification (Synthesized)",
         isGenerated: true,
-        code: `[project]\nname = "unprepared-service"\nversion = "0.1.0"\ndependencies = [\n    "pydantic>=2.0",\n    "pytest>=8.0",\n]\n\n[tool.pytest.ini_options]\ntestpaths = ["tests"]\npythonpath = ["."]`,
+        code: `[build-system]\nrequires = ["hatchling"]\nbuild-backend = "hatchling.build"\n\n[project]\nname = "payment-service"\nversion = "0.1.0"\ndependencies = [\n    "pydantic>=2.0",\n]`,
         safetyTitle: "✨ Auto-Onboarded: Pinned Build Environment",
-        safetyDesc: "Explicit virtual environment dependencies prevent the agent from hallucinating unpinned third-party libraries.",
-        safetyIcon: "✓",
+        safetyDesc: "Synthesized in-place by readiness fix. Provides reproducible build tooling and dependencies.",
+        safetyIcon: "⚙️",
         safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
       },
       {
@@ -510,18 +510,80 @@
         icon: "🧪",
         status: "✨ AUTO-GENERATED",
         statusClass: "bg-emerald-100 text-emerald-800 font-bold",
-        role: "Deterministic Verification Test Suite",
+        role: "Deterministic Verification Test Suite (Synthesized)",
         isGenerated: true,
-        code: `import pytest\nfrom src.app import process_payment\n\ndef test_process_payment_valid():\n    res = process_payment(50.0)\n    assert res["status"] == "paid"\n    assert res["amount"] == 50.0`,
-        safetyTitle: "✨ Auto-Onboarded: Deterministic Verification Loop",
-        safetyDesc: "Provides the model with an automated pytest feedback loop so it can self-verify changes before opening PRs.",
+        code: `from src.app import process_payment\n\ndef test_process_payment_valid():\n    res = process_payment(100.0)\n    assert res["status"] == "paid"\n    assert res["amount"] == 100.0`,
+        safetyTitle: "✨ Auto-Onboarded: Deterministic Verification Harness",
+        safetyDesc: "Synthesized in-place by readiness fix. Enables test-driven development (TDD) execution loops for agents.",
         safetyIcon: "🧪",
+        safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
+      },
+      {
+        name: "src/app.py",
+        icon: "📄",
+        status: "✅ VERIFIED",
+        statusClass: "bg-emerald-100 text-emerald-800 font-bold border border-emerald-200",
+        role: "Guarded Application Logic",
+        code: `import os\n\ndef process_payment(amount: float) -> dict:\n    # Guarded: Bound to tests and AGENTS.md contract\n    secret = os.getenv("STRIPE_SECRET_KEY", "sk_live_dummy")\n    return {"status": "paid", "amount": amount}`,
+        safetyTitle: "Pass: Covered by Test Harness & Guidelines",
+        safetyDesc: "Application logic is guarded by deterministic pytest suite in tests/test_app.py and operating constraints in AGENTS.md.",
+        safetyIcon: "✅",
+        safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
+      },
+      {
+        name: "infra/prod/main.tf",
+        icon: "🔒",
+        status: "🛡️ QUARANTINED",
+        statusClass: "bg-emerald-100 text-emerald-800 font-bold border border-emerald-200",
+        role: "Quarantined Production Infrastructure",
+        code: `# [QUARANTINED BY .agent-policy.yaml]\n# Access blocked: AI coding agents are barred from reading, modifying, or executing terraform in this directory.\nprovider "aws" {\n  region = "us-east-1"\n}\n\nresource "aws_rds_cluster" "production_db" {\n  cluster_identifier = "prod-aurora-cluster"\n  database_name      = "customer_records"\n}`,
+        safetyTitle: "Safeguarded: Blast Radius Contained",
+        safetyDesc: "Quarantined by .agent-policy.yaml (denied_paths: ['infra/']). Autonomous coding agents are strictly prohibited from mutating or executing production Terraform.",
+        safetyIcon: "🛡️",
+        safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
+      },
+      {
+        name: ".env",
+        icon: "🔒",
+        status: "🛡️ QUARANTINED",
+        statusClass: "bg-emerald-100 text-emerald-800 font-bold border border-emerald-200",
+        role: "Quarantined Secrets (Blocked by Policy)",
+        code: `# [QUARANTINED BY .agent-policy.yaml]\n# Access blocked: AI coding agents are restricted from reading or exfiltrating this file.\nSTRIPE_SECRET_KEY=sk_live_998877665544332211\nAWS_SECRET_ACCESS_KEY=AKIAIOSFODNN7EXAMPLE\nDATABASE_URL=postgres://admin:secret@prod-db.internal:5432/main`,
+        safetyTitle: "Safeguarded: Quarantined by Zero-Trust Policy",
+        safetyDesc: "Quarantined by .agent-policy.yaml (denied_paths: ['.env'], redact_env_vars: true). Autonomous agents cannot access, read, or leak these credentials.",
+        safetyIcon: "🛡️",
         safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
       }
     ];
 
-    // Initial base files for unconfigured
-    const initialUnconfiguredFiles = [
+    // Onboarded state for unconfigured_service (100% Agent Ready)
+    const onboardedUnconfiguredFiles = [
+      {
+        name: ".agent-policy.yaml",
+        icon: "🛡️",
+        status: "✨ AUTO-GENERATED",
+        statusClass: "bg-emerald-100 text-emerald-800 font-bold",
+        role: "Zero-Trust Boundary (Synthesized)",
+        isGenerated: true,
+        code: `# Zero-Trust AI Agent Policy Contract\n# Synthesized in-place by readiness fix\nversion: "1.0"\npermission_tier: sandbox_write\nenforcement: strict\n\nprotected_paths:\n  - .agent-policy.yaml\n  - infra/prod/main.tf\n\nallowed_tools:\n  - file_read\n  - file_edit\n  - run_command\n\ncommand_rules:\n  banned:\n    - "rm -rf*"\n    - "*curl*|*sh*"\n    - "git push --force*"\n\nverification_hooks:\n  pre_commit_gate: "bazel test //... && pytest tests/"`,
+        safetyTitle: "✨ Auto-Onboarded: Zero-Trust Boundary Established",
+        safetyDesc: "Synthesized in-place by readiness fix. Quarantines infra/prod/main.tf from autonomous agent mutations.",
+        safetyIcon: "🛡️",
+        safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
+      },
+      {
+        name: "AGENTS.md",
+        icon: "🤖",
+        status: "✨ AUTO-GENERATED",
+        statusClass: "bg-emerald-100 text-emerald-800 font-bold",
+        role: "Operating Guidelines Contract (Synthesized)",
+        isGenerated: true,
+        code: `# Agent Operating Guidelines & Harness Contract\n# Synthesized in-place by readiness fix\n\n## 1. Stack & Build Specifications\n- Monorepo: Bazel (BUILD.bazel)\n- Python: PEP 621 (pyproject.toml)\n- Verification: pytest tests/ and bazel test //...\n\n## 2. Multi-Tier Verification Ladder\n- Tier 1: Fast handler test (pytest tests/test_handler.py)\n- Tier 2: Monorepo build check (bazel build //...)\n\n## 3. Quarantined Boundaries\n- Read-Only: infra/prod/main.tf, .agent-policy.yaml`,
+        safetyTitle: "✨ Auto-Onboarded: Bazel & Python Operating Contract",
+        safetyDesc: "Eliminates guesswork by documenting canonical Bazel and pytest verification commands.",
+        safetyIcon: "🤖",
+        safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
+      },
       {
         name: "BUILD.bazel",
         icon: "⚙️",
@@ -572,44 +634,14 @@
       },
       {
         name: "infra/prod/main.tf",
-        icon: "🚨",
-        status: "UNPROTECTED",
-        statusClass: "bg-red-100 text-red-700 font-bold",
-        role: "Production Cloud Infrastructure",
-        code: `provider "aws" {\n  region = "us-east-1"\n}\n\nresource "aws_s3_bucket" "prod_assets" {\n  bucket = "prod-service-assets-bucket"\n}`,
-        safetyTitle: "Vulnerable: Production Infrastructure Unquarantined",
-        safetyDesc: "Missing .agent-policy.yaml. An autonomous agent can modify or delete production S3 buckets.",
-        safetyIcon: "⚠️",
-        safetyClass: "bg-amber-50 border-amber-200 text-amber-900"
-      }
-    ];
-
-    // Generated files when unconfigured is auto-onboarded
-    const synthesizedUnconfiguredFiles = [
-      {
-        name: ".agent-policy.yaml",
-        icon: "🛡️",
-        status: "✨ AUTO-GENERATED",
-        statusClass: "bg-emerald-100 text-emerald-800 font-bold",
-        role: "Zero-Trust Boundary (Synthesized)",
-        isGenerated: true,
-        code: `# Zero-Trust AI Agent Policy Contract\n# Synthesized in-place by readiness fix\nversion: "1.0"\npermission_tier: sandbox_write\nenforcement: strict\n\nprotected_paths:\n  - .agent-policy.yaml\n  - infra/prod/main.tf\n\nallowed_tools:\n  - file_read\n  - file_edit\n  - run_command\n\ncommand_rules:\n  banned:\n    - "rm -rf*"\n    - "*curl*|*sh*"\n    - "git push --force*"\n\nverification_hooks:\n  pre_commit_gate: "bazel test //... && pytest tests/"`,
-        safetyTitle: "✨ Auto-Onboarded: Zero-Trust Boundary Established",
-        safetyDesc: "Synthesized in-place by readiness fix. Quarantines infra/prod/main.tf from autonomous agent mutations.",
+        icon: "🔒",
+        status: "🛡️ QUARANTINED",
+        statusClass: "bg-emerald-100 text-emerald-800 font-bold border border-emerald-200",
+        role: "Quarantined Production Infrastructure",
+        code: `# [QUARANTINED BY .agent-policy.yaml]\n# Protected: AI coding agents are barred from modifying or deleting production cloud resources.\nprovider "aws" {\n  region = "us-east-1"\n}\n\nresource "aws_s3_bucket" "prod_assets" {\n  bucket = "prod-service-assets-bucket"\n}`,
+        safetyTitle: "Safeguarded: Blast Radius Contained",
+        safetyDesc: "Quarantined by .agent-policy.yaml (denied_paths: ['infra/']). Autonomous coding agents are strictly prohibited from mutating or executing production Terraform.",
         safetyIcon: "🛡️",
-        safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
-      },
-      {
-        name: "AGENTS.md",
-        icon: "🤖",
-        status: "✨ AUTO-GENERATED",
-        statusClass: "bg-emerald-100 text-emerald-800 font-bold",
-        role: "Operating Guidelines Contract (Synthesized)",
-        isGenerated: true,
-        code: `# Agent Operating Guidelines & Harness Contract\n# Synthesized in-place by readiness fix\n\n## 1. Stack & Build Specifications\n- Monorepo: Bazel (BUILD.bazel)\n- Python: PEP 621 (pyproject.toml)\n- Verification: pytest tests/ and bazel test //...\n\n## 2. Multi-Tier Verification Ladder\n- Tier 1: Fast handler test (pytest tests/test_handler.py)\n- Tier 2: Monorepo build check (bazel build //...)\n\n## 3. Quarantined Boundaries\n- Read-Only: infra/prod/main.tf, .agent-policy.yaml`,
-        safetyTitle: "✨ Auto-Onboarded: Bazel & Python Operating Contract",
-        safetyDesc: "Eliminates guesswork by documenting canonical Bazel and pytest verification commands.",
-        safetyIcon: "🤖",
         safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
       }
     ];
@@ -973,12 +1005,12 @@
 
           if (currentSampleKey === 'unprepared') {
             r.summary = "✨ Successfully Auto-Onboarded: Quarantined 2 sensitive paths, synthesized .agent-policy.yaml, AGENTS.md, build spec, and test harness in-place.";
-            r.files = [...initialUnpreparedFiles, ...synthesizedUnpreparedFiles];
-            currentSelectedFileIndex = 3; // select .agent-policy.yaml
+            r.files = JSON.parse(JSON.stringify(onboardedUnpreparedFiles));
+            currentSelectedFileIndex = 0; // select .agent-policy.yaml
           } else if (currentSampleKey === 'unconfigured') {
             r.summary = "✨ Successfully Auto-Onboarded: Quarantined infra/prod/main.tf, synthesized zero-trust boundary and AGENTS.md in-place.";
-            r.files = [...initialUnconfiguredFiles, ...synthesizedUnconfiguredFiles];
-            currentSelectedFileIndex = 5; // select .agent-policy.yaml
+            r.files = JSON.parse(JSON.stringify(onboardedUnconfiguredFiles));
+            currentSelectedFileIndex = 0; // select .agent-policy.yaml
           }
 
           if (banner) {
