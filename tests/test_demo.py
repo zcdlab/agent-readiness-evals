@@ -67,3 +67,11 @@ def test_readme_and_architecture_exist():
     assert "ARCHITECTURE.md" in agents.read_text()
     assert "DESIGN.md" in agents.read_text()
     assert "https://zcdlab.github.io/agent-readiness-evals/" in readme.read_text()
+
+
+def test_demo_diff_renderer_functions_declared():
+    doc = Path("docs/index.html")
+    content = doc.read_text()
+    assert "function computeReadinessDiff" in content, "Missing function computeReadinessDiff"
+    assert "function renderDiffTable" in content, "Missing function renderDiffTable"
+

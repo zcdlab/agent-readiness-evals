@@ -422,6 +422,172 @@
 
   <!-- Scripts -->
   <script>
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    const SENSITIVE_PATTERNS = [
+      "sk_live_",
+      "AKIA",
+      "postgres://",
+      "STRIPE_SECRET_KEY",
+      "AWS_SECRET_ACCESS_KEY",
+      "DATABASE_URL",
+      "cluster_identifier",
+      "aws_rds_cluster",
+      "aws_s3_bucket"
+    ];
+
+    function highlightReadinessSecrets(line) {
+      if (!line) return '';
+      const escaped = escapeHtml(line);
+      const isSensitive = SENSITIVE_PATTERNS.some(pat => line.includes(pat));
+      if (isSensitive) {
+        return `<span class="text-red-600 font-semibold">${escaped}</span>`;
+      }
+      return escaped;
+    }
+
+    function computeReadinessDiff(currentFile, isRepoOnboarded, initialFile) {
+      const curLines = (currentFile && currentFile.code ? currentFile.code : '').replace(/\r\n/g, '\n').split('\n');
+      const rows = [];
+
+      if (!isRepoOnboarded) {
+        curLines.forEach((line, idx) => {
+          rows.push({
+            type: 'neutral',
+            oldNum: idx + 1,
+            newNum: idx + 1,
+            sign: ' ',
+            text: line,
+            htmlText: highlightReadinessSecrets(line)
+          });
+        });
+        return rows;
+      }
+
+      if (currentFile && currentFile.isGenerated) {
+        curLines.forEach((line, idx) => {
+          rows.push({
+            type: 'add',
+            oldNum: '',
+            newNum: idx + 1,
+            sign: '+',
+            text: line
+          });
+        });
+        return rows;
+      }
+
+      const origLines = (initialFile && initialFile.code ? initialFile.code : (currentFile ? currentFile.code : '')).replace(/\r\n/g, '\n').split('\n');
+
+      let prefixLen = 0;
+      while (prefixLen < origLines.length && prefixLen < curLines.length && origLines[prefixLen] === curLines[prefixLen]) {
+        prefixLen++;
+      }
+
+      let suffixLen = 0;
+      while (
+        suffixLen < (origLines.length - prefixLen) &&
+        suffixLen < (curLines.length - prefixLen) &&
+        origLines[origLines.length - 1 - suffixLen] === curLines[curLines.length - 1 - suffixLen]
+      ) {
+        suffixLen++;
+      }
+
+      if (prefixLen + suffixLen === origLines.length && origLines.length === curLines.length) {
+        curLines.forEach((line, idx) => {
+          rows.push({
+            type: 'neutral',
+            oldNum: idx + 1,
+            newNum: idx + 1,
+            sign: ' ',
+            text: line
+          });
+        });
+        return rows;
+      }
+
+      for (let i = 0; i < prefixLen; i++) {
+        rows.push({
+          type: 'neutral',
+          oldNum: i + 1,
+          newNum: i + 1,
+          sign: ' ',
+          text: origLines[i]
+        });
+      }
+
+      for (let i = prefixLen; i < origLines.length - suffixLen; i++) {
+        rows.push({
+          type: 'del',
+          oldNum: i + 1,
+          newNum: '',
+          sign: '-',
+          text: origLines[i]
+        });
+      }
+
+      for (let j = prefixLen; j < curLines.length - suffixLen; j++) {
+        rows.push({
+          type: 'add',
+          oldNum: '',
+          newNum: j + 1,
+          sign: '+',
+          text: curLines[j]
+        });
+      }
+
+      const origSuffixStart = origLines.length - suffixLen;
+      const curSuffixStart = curLines.length - suffixLen;
+      for (let k = 0; k < suffixLen; k++) {
+        rows.push({
+          type: 'neutral',
+          oldNum: origSuffixStart + k + 1,
+          newNum: curSuffixStart + k + 1,
+          sign: ' ',
+          text: origLines[origSuffixStart + k]
+        });
+      }
+
+      return rows;
+    }
+
+    function renderDiffTable(rows) {
+      if (!rows || rows.length === 0) return '<div class="p-4 text-xs text-slate-400">Empty file</div>';
+      let html = '<div class="font-mono text-xs overflow-x-auto select-text divide-y divide-slate-100">';
+      for (const row of rows) {
+        let rowClass = 'flex items-stretch hover:bg-slate-50/50 transition-colors';
+        let numClass = 'w-10 flex-shrink-0 text-right pr-2 text-[10px] text-slate-400 select-none py-1 border-r border-slate-200/60 bg-slate-50/70';
+        let signClass = 'w-6 flex-shrink-0 text-center font-bold select-none py-1';
+        let textClass = 'flex-1 pl-3 pr-4 py-1 whitespace-pre-wrap break-all';
+
+        if (row.type === 'del') {
+          rowClass += ' bg-red-50 text-red-900 font-medium';
+          numClass = 'w-10 flex-shrink-0 text-right pr-2 text-[10px] text-red-400 select-none py-1 border-r border-red-200 bg-red-100/50';
+          signClass += ' text-red-600 bg-red-100/60';
+        } else if (row.type === 'add') {
+          rowClass += ' bg-emerald-50 text-emerald-950 font-medium';
+          numClass = 'w-10 flex-shrink-0 text-right pr-2 text-[10px] text-emerald-500 select-none py-1 border-r border-emerald-200 bg-emerald-100/50';
+          signClass += ' text-emerald-600 bg-emerald-100/60';
+        } else {
+          rowClass += ' bg-white text-slate-800';
+          signClass += ' text-transparent';
+        }
+
+        const displayNum = row.oldNum || row.newNum || '';
+        const renderedText = row.htmlText || escapeHtml(row.text);
+        html += `<div class="${rowClass}">` +
+          `<span class="${numClass}">${displayNum}</span>` +
+          `<span class="${signClass}">${row.sign || '&nbsp;'}</span>` +
+          `<span class="${textClass}">${renderedText}</span>` +
+          `</div>`;
+      }
+      html += '</div>';
+      return html;
+    }
+
     function switchTab(tabId) {
       document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
       document.querySelectorAll('.tab-btn').forEach(btn => {
