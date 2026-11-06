@@ -142,6 +142,7 @@
 
         <!-- 4-Pillar Live Verification Scorecard -->
         <div id="pillars-container" class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 pb-1"></div>
+        <div id="pillar-details-drawer" class="hidden transition-all duration-200"></div>
 
         <!-- 2-Column Inspector: File Tree vs File Viewer -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
@@ -178,6 +179,7 @@
                   <span class="font-mono text-slate-900 font-bold" id="preview-filename">.env</span>
                   <span class="text-[11px] font-mono text-slate-600 bg-slate-200/70 px-2 py-0.5 rounded" id="preview-role">Production Credentials</span>
                   <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded" id="preview-badge">EXPOSED</span>
+                  <span id="preview-diff-stat" class="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded hidden"></span>
                 </div>
                 <div class="flex items-center space-x-2 text-[11px] text-slate-500">
                   <span id="editor-line-count" class="font-mono text-[10px]">3 lines</span>
@@ -366,6 +368,16 @@
       }
       html += '</div>';
       return html;
+    }
+
+    function getFileDiffStats(file, isRepoOnboarded, initialFiles) {
+      if (!isRepoOnboarded || !file) return { additions: 0, deletions: 0, isChanged: false };
+      const initialFile = initialFiles ? initialFiles.find(initF => initF.name === file.name) : null;
+      const rows = computeReadinessDiff(file, isRepoOnboarded, initialFile);
+      const additions = rows.filter(r => r.type === 'add').length;
+      const deletions = rows.filter(r => r.type === 'del').length;
+      const isChanged = Boolean(file.isGenerated || deletions > 0 || additions > 0);
+      return { additions, deletions, isChanged };
     }
 
     function switchTab(tabId) {
@@ -1005,6 +1017,169 @@
       return [];
     }
 
+    const PILLAR_DIAGNOSTICS = [
+      {
+        id: 1,
+        name: "1. Build & Dependency Specs",
+        detection: "Scans for pyproject.toml, package.json, Cargo.toml, or BUILD.bazel at repository root.",
+        failureMode: "Without pinned build specs, autonomous coding agents hallucinate package managers (pip vs poetry vs uv), break virtual environments, or introduce conflicting dependency versions.",
+        remediation: "Generates explicit build configuration (PEP 621, Bazel target) defining canonical project dependencies and build entrypoints."
+      },
+      {
+        id: 2,
+        name: "2. Verification Test Harness",
+        detection: "Checks for test directories (tests/, __tests__/) and test runner configurations (pytest, jest, cargo test).",
+        failureMode: "Without an automated test suite, AI agents operate blind. They cannot verify that code edits actually work, causing hallucinations, broken edge cases, and regressions.",
+        remediation: "Synthesizes deterministic unit test harness enabling test-driven development (TDD) loops and pre-commit assertion checks."
+      },
+      {
+        id: 3,
+        name: "3. Blast-Radius Boundary Policy",
+        detection: "Verifies existence and enforcement of .agent-policy.yaml zero-trust security configuration.",
+        failureMode: "Without boundary policy, agents have unrestricted shell and filesystem permissions. They can mutate cloud infrastructure (infra/prod/), leak .env credentials, or execute destructive commands (rm -rf).",
+        remediation: "Establishes zero-trust boundary policy (.agent-policy.yaml) quarantining sensitive paths and enforcing strict tool clamps."
+      },
+      {
+        id: 4,
+        name: "4. Operating Guidelines Contract",
+        detection: "Validates presence of AGENTS.md specifying domain invariants and multi-tier verification ladders.",
+        failureMode: "Without AGENTS.md, agents suffer from Context Drift. They violate domain invariants (e.g. using float for currency, omitting idempotency keys) and guess test flags.",
+        remediation: "Generates canonical AGENTS.md operating guidelines with architectural invariants, idempotency rules, and deterministic verification ladders."
+      }
+    ];
+
+    let selectedPillarIdx = null;
+
+    function togglePillarDetails(idx) {
+      if (selectedPillarIdx === idx || idx === null) {
+        selectedPillarIdx = null;
+      } else {
+        selectedPillarIdx = idx;
+      }
+      renderPillars();
+    }
+
+    function renderPillars() {
+      const r = sampleRepos[currentSampleKey];
+      const pillars = r.onboarded ? [
+        { name: "1. Build Specs", pts: 25, desc: "Reproducible build configured" },
+        { name: "2. Test Harness", pts: 25, desc: "Automated test harness active" },
+        { name: "3. Boundary Policy", pts: 25, desc: ".agent-policy.yaml active" },
+        { name: "4. Operating Guidelines", pts: 25, desc: "AGENTS.md contract active" }
+      ] : (r.initialPillars || [
+        { name: "1. Build Specs", pts: (r.score >= 50 ? 25 : 0), desc: (r.score >= 50 ? "Build spec active" : "Missing config") },
+        { name: "2. Test Harness", pts: (r.score >= 50 ? 25 : 0), desc: (r.score >= 50 ? "Automated tests active" : "Missing test harness") },
+        { name: "3. Boundary Policy", pts: (r.score >= 75 ? 25 : 0), desc: (r.score >= 75 ? ".agent-policy.yaml active" : "No zero-trust policy") },
+        { name: "4. Operating Guidelines", pts: (r.score === 100 ? 25 : 0), desc: (r.score === 100 ? "AGENTS.md active" : "Missing contract") }
+      ]);
+
+      const pillarsCont = document.getElementById('pillars-container');
+      if (pillarsCont) {
+        pillarsCont.innerHTML = pillars.map((p, idx) => {
+          const isSelected = (selectedPillarIdx === idx);
+          const pass = p.pts === 25;
+          const baseBorder = pass ? 'border-emerald-200' : 'border-red-200';
+          const baseBg = pass ? 'bg-emerald-50/80 hover:bg-emerald-100/70' : 'bg-red-50/80 hover:bg-red-100/70';
+          const textColor = pass ? 'text-emerald-900' : 'text-red-900';
+          const ringClass = isSelected ? 'ring-2 ring-blue-500 shadow-sm border-blue-400' : baseBorder;
+
+          return `
+            <div onclick="togglePillarDetails(${idx})" class="p-2.5 rounded-lg border text-xs cursor-pointer transition-all ${baseBg} ${ringClass} ${textColor} relative group" title="Click to view AI Agent Failure Mode & Diagnostics">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-[11px] truncate flex items-center gap-1">
+                  <span>${p.name}</span>
+                  <span class="text-[9px] text-slate-400 group-hover:text-blue-600 transition-colors">ℹ️</span>
+                </span>
+                <span class="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded ${pass ? 'bg-emerald-200 text-emerald-900' : 'bg-red-200 text-red-900'}">${p.pts}/25</span>
+              </div>
+              <div class="text-[10px] mt-0.5 text-slate-600 truncate">${p.desc}</div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      const drawer = document.getElementById('pillar-details-drawer');
+      if (drawer) {
+        if (selectedPillarIdx === null) {
+          drawer.classList.add('hidden');
+          drawer.innerHTML = '';
+        } else {
+          drawer.classList.remove('hidden');
+          const diag = PILLAR_DIAGNOSTICS[selectedPillarIdx];
+          const currentPillar = pillars[selectedPillarIdx];
+          const pass = currentPillar.pts === 25;
+
+          drawer.innerHTML = `
+            <div class="p-3.5 bg-slate-900 text-slate-100 rounded-xl border border-slate-700 shadow-md text-xs space-y-2.5 mt-2">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <div class="flex items-center gap-2">
+                  <span class="text-sm">🔍</span>
+                  <span class="font-bold text-white text-xs tracking-tight">${diag.name} — AI Agent Diagnostic</span>
+                  <span class="font-mono text-[10px] font-bold px-2 py-0.5 rounded ${pass ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-red-500/20 text-red-300 border border-red-500/40'}">
+                    ${pass ? '✓ PASSED (25/25)' : '❌ VULNERABLE (0/25)'}
+                  </span>
+                </div>
+                <button onclick="togglePillarDetails(null)" class="text-slate-400 hover:text-white text-xs font-semibold px-2 py-0.5 rounded hover:bg-slate-800 transition">
+                  ✕ Close
+                </button>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-[11px]">
+                <div class="bg-slate-800/60 p-2.5 rounded-lg border border-slate-700/60">
+                  <span class="text-blue-400 font-bold block uppercase text-[10px] tracking-wider mb-1">🔍 Detection Mechanism</span>
+                  <p class="text-slate-300 leading-relaxed">${diag.detection}</p>
+                </div>
+                <div class="bg-slate-800/60 p-2.5 rounded-lg border border-slate-700/60">
+                  <span class="text-red-400 font-bold block uppercase text-[10px] tracking-wider mb-1">🚨 AI Agent Failure Mode</span>
+                  <p class="text-slate-300 leading-relaxed">${diag.failureMode}</p>
+                </div>
+                <div class="bg-slate-800/60 p-2.5 rounded-lg border border-slate-700/60">
+                  <span class="text-emerald-400 font-bold block uppercase text-[10px] tracking-wider mb-1">🛠️ Auto-Fix Remediation</span>
+                  <p class="text-slate-300 leading-relaxed">${diag.remediation}</p>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      }
+    }
+
+    function updateOnboardBanner(r) {
+      const banner = document.getElementById('onboard-banner');
+      if (!banner) return;
+      const initialFiles = getInitialFilesForSample(currentSampleKey);
+      let totalAdditions = 0;
+      let totalDeletions = 0;
+      let filesChangedCount = 0;
+
+      r.files.forEach(f => {
+        const stats = getFileDiffStats(f, true, initialFiles);
+        if (stats.isChanged) {
+          filesChangedCount++;
+          totalAdditions += stats.additions;
+          totalDeletions += stats.deletions;
+        }
+      });
+
+      banner.className = "p-3 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-900 text-xs flex items-center justify-between gap-2 transition-all";
+      banner.innerHTML = `
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 w-full">
+          <div class="flex items-center gap-2">
+            <span class="text-base">✨</span>
+            <span class="font-medium"><strong>Auto-Onboard Complete (100/100)!</strong> All contracts synthesized. Git diff active below.</span>
+          </div>
+          <div class="flex items-center gap-2 font-mono text-[11px] shrink-0">
+            <span class="px-2 py-0.5 rounded bg-white/90 border border-emerald-300 text-slate-800 font-semibold shadow-2xs flex items-center gap-1.5">
+              <span class="text-slate-500">📊 Git Diff:</span>
+              <span>${filesChangedCount} files changed</span>
+              <span class="text-emerald-700 font-bold">+${totalAdditions}</span>
+              <span class="text-red-600 font-bold">-${totalDeletions}</span>
+            </span>
+            <span class="text-[10px] bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded font-bold">Score: 100/100</span>
+          </div>
+        </div>
+      `;
+    }
+
     function selectSampleRepo(key) {
       if (isSpinning) {
         onboardSpinTimers.forEach(t => clearTimeout(t));
@@ -1013,6 +1188,7 @@
       }
       currentSampleKey = key;
       currentSelectedFileIndex = 0;
+      selectedPillarIdx = null;
 
       document.querySelectorAll('.repo-card-btn').forEach(b => {
         b.className = "repo-card-btn text-left p-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-sm transition";
@@ -1024,9 +1200,16 @@
         else activeBtn.className = "repo-card-btn text-left p-3.5 rounded-xl border-2 border-emerald-600 bg-emerald-50/40 text-slate-900 shadow-sm transition";
       }
 
-      // Hide notification banner on repo switch
+      const r = sampleRepos[currentSampleKey];
       const banner = document.getElementById('onboard-banner');
-      if (banner) banner.classList.add('hidden');
+      if (banner) {
+        if (r && r.onboarded) {
+          updateOnboardBanner(r);
+          banner.classList.remove('hidden');
+        } else {
+          banner.classList.add('hidden');
+        }
+      }
 
       renderSampleRepo();
     }
@@ -1051,31 +1234,8 @@
         }
       }
 
-      // Render 4-Pillar Live Scorecard
-      const pillars = r.onboarded ? [
-        { name: "1. Build Specs", pts: 25, desc: "Reproducible build configured" },
-        { name: "2. Test Harness", pts: 25, desc: "Automated test harness active" },
-        { name: "3. Boundary Policy", pts: 25, desc: ".agent-policy.yaml active" },
-        { name: "4. Operating Guidelines", pts: 25, desc: "AGENTS.md contract active" }
-      ] : (r.initialPillars || [
-        { name: "1. Build Specs", pts: (r.score >= 50 ? 25 : 0), desc: (r.score >= 50 ? "Build spec active" : "Missing config") },
-        { name: "2. Test Harness", pts: (r.score >= 50 ? 25 : 0), desc: (r.score >= 50 ? "Automated tests active" : "Missing test harness") },
-        { name: "3. Boundary Policy", pts: (r.score >= 75 ? 25 : 0), desc: (r.score >= 75 ? ".agent-policy.yaml active" : "No zero-trust policy") },
-        { name: "4. Operating Guidelines", pts: (r.score === 100 ? 25 : 0), desc: (r.score === 100 ? "AGENTS.md active" : "Missing contract") }
-      ]);
-
-      const pillarsCont = document.getElementById('pillars-container');
-      if (pillarsCont) {
-        pillarsCont.innerHTML = pillars.map(p => `
-          <div class="p-2.5 rounded-lg border text-xs ${p.pts === 25 ? 'bg-emerald-50/80 border-emerald-200 text-emerald-900' : 'bg-red-50/80 border-red-200 text-red-900'}">
-            <div class="flex items-center justify-between">
-              <span class="font-bold text-[11px] truncate">${p.name}</span>
-              <span class="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded ${p.pts === 25 ? 'bg-emerald-200 text-emerald-900' : 'bg-red-200 text-red-900'}">${p.pts}/25</span>
-            </div>
-            <div class="text-[10px] mt-0.5 text-slate-600 truncate">${p.desc}</div>
-          </div>
-        `).join('');
-      }
+      // Render 4-Pillar Live Scorecard & Interactive Failure Mode Drawer
+      renderPillars();
 
       // Update action button (NO REVERT BUTTON - git diff active)
       const btnFix = document.getElementById('btn-fix-current');
@@ -1095,16 +1255,33 @@
         btnFix.innerHTML = '<span>⚡</span> <span id="btn-fix-label">Auto-Onboard to 100/100 (readiness fix)</span>';
       }
 
-      // Render Tree
+      // Render Tree with Git Diff Delta Badges
+      const initialFiles = getInitialFilesForSample(currentSampleKey);
       const treeCont = document.getElementById('file-tree-container');
-      treeCont.innerHTML = r.files.map((f, idx) => `
-        <button onclick="selectFile(${idx})" id="tree-file-${idx}" class="w-full text-left px-2.5 py-2 rounded-lg flex items-center justify-between transition ${idx === currentSelectedFileIndex ? 'bg-blue-100 text-blue-900 font-semibold border border-blue-200' : 'hover:bg-slate-200 text-slate-700'}">
-          <span class="truncate flex items-center gap-1.5">
-            <span>${f.icon}</span> <span>${f.name}</span>
-          </span>
-          <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${f.statusClass}">${f.status}</span>
-        </button>
-      `).join('');
+      treeCont.innerHTML = r.files.map((f, idx) => {
+        const stats = getFileDiffStats(f, r.onboarded, initialFiles);
+        let deltaBadge = '';
+        if (r.onboarded && stats.isChanged) {
+          if (stats.additions > 0 && stats.deletions > 0) {
+            deltaBadge = `<span class="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-200/90 text-slate-800 ml-1.5 shrink-0"><span class="text-emerald-700">+${stats.additions}</span> <span class="text-red-600">-${stats.deletions}</span></span>`;
+          } else if (stats.additions > 0) {
+            deltaBadge = `<span class="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 ml-1.5 shrink-0">+${stats.additions}</span>`;
+          } else if (stats.deletions > 0) {
+            deltaBadge = `<span class="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-800 ml-1.5 shrink-0">-${stats.deletions}</span>`;
+          }
+        }
+        return `
+          <button onclick="selectFile(${idx})" id="tree-file-${idx}" class="w-full text-left px-2.5 py-2 rounded-lg flex items-center justify-between transition ${idx === currentSelectedFileIndex ? 'bg-blue-100 text-blue-900 font-semibold border border-blue-200' : 'hover:bg-slate-200 text-slate-700'}">
+            <span class="truncate flex items-center gap-1.5">
+              <span>${f.icon}</span> <span>${f.name}</span>
+            </span>
+            <span class="flex items-center">
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${f.statusClass}">${f.status}</span>
+              ${deltaBadge}
+            </span>
+          </button>
+        `;
+      }).join('');
 
       renderSelectedFile();
     }
@@ -1142,6 +1319,33 @@
       const container = document.getElementById('readiness-diff-container');
       if (container) {
         container.innerHTML = renderDiffTable(rows);
+      }
+
+      // Update preview diff stat badge
+      const diffStatEl = document.getElementById('preview-diff-stat');
+      if (diffStatEl) {
+        if (r.onboarded) {
+          const stats = getFileDiffStats(f, true, initialFiles);
+          if (stats.isChanged) {
+            diffStatEl.classList.remove('hidden');
+            if (stats.additions > 0 && stats.deletions > 0) {
+              diffStatEl.className = "font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-200 text-slate-800 border border-slate-300";
+              diffStatEl.innerHTML = `<span class="text-emerald-700">+${stats.additions}</span> <span class="text-red-600">-${stats.deletions}</span>`;
+            } else if (stats.additions > 0) {
+              diffStatEl.className = "font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200";
+              diffStatEl.textContent = `+${stats.additions} lines`;
+            } else if (stats.deletions > 0) {
+              diffStatEl.className = "font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-800 border border-red-200";
+              diffStatEl.textContent = `-${stats.deletions} lines`;
+            }
+          } else {
+            diffStatEl.className = "font-mono text-[10px] text-slate-500 px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200";
+            diffStatEl.textContent = "unchanged";
+            diffStatEl.classList.remove('hidden');
+          }
+        } else {
+          diffStatEl.classList.add('hidden');
+        }
       }
 
       const card = document.getElementById('safety-card');
@@ -1241,14 +1445,7 @@
         }
 
         if (banner) {
-          banner.className = "p-3 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-900 text-xs flex items-center justify-between gap-2 transition-all";
-          banner.innerHTML = `
-            <div class="flex items-center gap-2">
-              <span class="text-base">✨</span>
-              <span class="font-medium"><strong>Auto-Onboard Complete (100/100)!</strong> All contracts synthesized. Git diff active below.</span>
-            </div>
-            <span class="text-[10px] font-mono bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded font-bold">Score: 100/100</span>
-          `;
+          updateOnboardBanner(r);
         }
 
         renderSampleRepo();

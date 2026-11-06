@@ -135,5 +135,23 @@ def test_demo_concrete_diff_examples():
     assert "PaymentGatewayConfig" in content, "Scenario 1 should demonstrate concrete configuration abstraction"
 
 
+def test_demo_pillar_diagnostics_and_drawer_present():
+    content = Path("docs/index.html").read_text()
+    assert 'id="pillar-details-drawer"' in content, "Missing #pillar-details-drawer in docs/index.html"
+    assert "const PILLAR_DIAGNOSTICS =" in content, "Missing PILLAR_DIAGNOSTICS in script"
+    assert "function togglePillarDetails" in content, "Missing togglePillarDetails in script"
+    assert "function renderPillars" in content, "Missing renderPillars in script"
+    assert "AI Agent Failure Mode" in content, "Missing failure mode documentation"
+
+
+def test_demo_git_diff_stats_and_badges_present():
+    content = Path("docs/index.html").read_text()
+    assert 'id="preview-diff-stat"' in content, "Missing #preview-diff-stat in docs/index.html"
+    assert "function getFileDiffStats" in content, "Missing getFileDiffStats in script"
+    assert "function updateOnboardBanner" in content, "Missing updateOnboardBanner in script"
+    assert "files changed" in content, "Missing diff statistics text in script"
+
+
+
 
 
