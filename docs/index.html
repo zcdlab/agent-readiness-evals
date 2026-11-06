@@ -1255,33 +1255,16 @@
         btnFix.innerHTML = '<span>⚡</span> <span id="btn-fix-label">Auto-Onboard to 100/100 (readiness fix)</span>';
       }
 
-      // Render Tree with Git Diff Delta Badges
-      const initialFiles = getInitialFilesForSample(currentSampleKey);
+      // Render Tree: Clean, single-line buttons with status badge aligned on right
       const treeCont = document.getElementById('file-tree-container');
-      treeCont.innerHTML = r.files.map((f, idx) => {
-        const stats = getFileDiffStats(f, r.onboarded, initialFiles);
-        let deltaBadge = '';
-        if (r.onboarded && stats.isChanged) {
-          if (stats.additions > 0 && stats.deletions > 0) {
-            deltaBadge = `<span class="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-200/90 text-slate-800 ml-1.5 shrink-0"><span class="text-emerald-700">+${stats.additions}</span> <span class="text-red-600">-${stats.deletions}</span></span>`;
-          } else if (stats.additions > 0) {
-            deltaBadge = `<span class="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 ml-1.5 shrink-0">+${stats.additions}</span>`;
-          } else if (stats.deletions > 0) {
-            deltaBadge = `<span class="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-800 ml-1.5 shrink-0">-${stats.deletions}</span>`;
-          }
-        }
-        return `
-          <button onclick="selectFile(${idx})" id="tree-file-${idx}" class="w-full text-left px-2.5 py-2 rounded-lg flex items-center justify-between transition ${idx === currentSelectedFileIndex ? 'bg-blue-100 text-blue-900 font-semibold border border-blue-200' : 'hover:bg-slate-200 text-slate-700'}">
-            <span class="truncate flex items-center gap-1.5">
-              <span>${f.icon}</span> <span>${f.name}</span>
-            </span>
-            <span class="flex items-center">
-              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${f.statusClass}">${f.status}</span>
-              ${deltaBadge}
-            </span>
-          </button>
-        `;
-      }).join('');
+      treeCont.innerHTML = r.files.map((f, idx) => `
+        <button onclick="selectFile(${idx})" id="tree-file-${idx}" class="w-full text-left px-2.5 py-2 rounded-lg flex items-center justify-between gap-2 transition ${idx === currentSelectedFileIndex ? 'bg-blue-100 text-blue-900 font-semibold border border-blue-200' : 'hover:bg-slate-200 text-slate-700'}">
+          <span class="truncate flex items-center gap-1.5 min-w-0">
+            <span>${f.icon}</span> <span class="truncate">${f.name}</span>
+          </span>
+          <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${f.statusClass} shrink-0 whitespace-nowrap">${f.status}</span>
+        </button>
+      `).join('');
 
       renderSelectedFile();
     }
