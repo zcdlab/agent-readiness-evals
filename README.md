@@ -65,9 +65,29 @@ readiness scan examples/unconfigured_service --json
 # 3. Auto-onboard repository (synthesizes .agent-policy.yaml & AGENTS.md, raising score to 100/100)
 readiness fix examples/unconfigured_service
 
-# 4. Open interactive Web Control Plane
+# 4. Auto-onboard with live LLM contract synthesis (OpenAI, Gemini, Anthropic)
+readiness fix examples/unconfigured_service --llm
+
+# 5. Open interactive Web Control Plane
 readiness ui
 ```
+
+---
+
+## ⚙️ Execution Modes: Production LLM Workflow vs. Browser Demo
+
+`agent-readiness` is built with a clean separation of concerns:
+
+1. **Production / CLI Workflow (Dynamic LLM Calls)**:
+   In normal operation, the onboarding engine can call state-of-the-art LLMs (Gemini, OpenAI, Anthropic, or local Ollama) to synthesize bespoke, contextual policies and operating guidelines tailored to your repository:
+   ```bash
+   cp .env.example .env
+   # Set OPENAI_API_KEY, GEMINI_API_KEY, or custom LLM_API_BASE
+   readiness fix . --llm
+   ```
+
+2. **Interactive Browser Demo (Pre-Calculated Golden Fixtures)**:
+   The web control plane (`docs/index.html` on GitHub Pages) operates 100% client-side with pre-calculated golden fixtures and zero external API dependencies, ensuring instant, deterministic, and safe evaluation without exposing credentials.
 
 ---
 

@@ -1,5 +1,8 @@
-import argparse, json, sys, webbrowser
+import argparse
+import sys
+import webbrowser
 from pathlib import Path
+from src.llm import get_api_key, is_demo_mode
 from src.onboarder import onboard_repository
 from src.scanner import scan_repository
 
@@ -14,6 +17,7 @@ def main(argv: list[str] | None = None) -> int:
 
     p_fix = sub.add_parser("fix", help="Auto-onboard repository and generate missing contracts")
     p_fix.add_argument("path", default=".", nargs="?")
+    p_fix.add_argument("--llm", action="store_true", help="Call real LLM for contract synthesis")
 
     sub.add_parser("ui", help="Open Control Plane Web UI")
 
@@ -37,8 +41,10 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"\nMissing Safeguards: {', '.join(rep.missing_safeguards)}")
                 print(f"Run 'readiness fix {target}' to auto-onboard to 100/100.\n")
     elif args.cmd == "fix":
-        rep = onboard_repository(target, write_files=True)
-        print(f"\n⚡ Auto-Onboarded {rep.repo_name} successfully!")
+        rep = onboard_repository(target, write_files=True, force_llm=args.llm)
+        has_key, provider = get_api_key()
+        engine = f"LLM ({provider})" if (args.llm or (not is_demo_mode() and has_key)) else "Pre-Calculated Fixtures"
+        print(f"\n⚡ Auto-Onboarded {rep.repo_name} [Engine: {engine}]")
         print(f"   Score: {rep.score_before}/100 -> {rep.score_after}/100 [{rep.grade}]")
         print("   Synthesized contracts: .agent-policy.yaml, AGENTS.md\n")
     elif args.cmd == "ui":
