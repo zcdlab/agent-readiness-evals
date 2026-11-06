@@ -26,3 +26,4 @@ def test_golden_cases_match_scanned_repositories():
             rep = scan_repository(repo_path)
             assert rep.score_before == case["score_before"]
             assert rep.grade == case["grade_before"]
+

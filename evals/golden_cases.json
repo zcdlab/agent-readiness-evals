@@ -8,7 +8,10 @@
       "name": "Legacy Bare Script Service",
       "path": "examples/unprepared_service",
       "stack": [],
-      "sensitive_paths": [".env", "infra/prod/"],
+      "sensitive_paths": [
+        ".env",
+        "infra/prod/"
+      ],
       "score_before": 0,
       "grade_before": "F - Unprepared",
       "score_after": 100,
@@ -26,8 +29,14 @@
       "id": "unconfigured_service",
       "name": "Unconfigured Python/Bazel Microservice",
       "path": "examples/unconfigured_service",
-      "stack": ["bazel", "python"],
-      "sensitive_paths": [".env", "infra/prod/"],
+      "stack": [
+        "bazel",
+        "python"
+      ],
+      "sensitive_paths": [
+        ".env",
+        "infra/prod/"
+      ],
       "score_before": 50,
       "grade_before": "C - High Blast Risk",
       "score_after": 100,
@@ -43,8 +52,14 @@
       "id": "agent_ready_service",
       "name": "Certified Enterprise Agent-Ready Service",
       "path": "examples/agent_ready_service",
-      "stack": ["bazel", "python"],
-      "sensitive_paths": [".agent-policy.yaml", "infra/prod/"],
+      "stack": [
+        "bazel",
+        "python"
+      ],
+      "sensitive_paths": [
+        ".agent-policy.yaml",
+        "infra/prod/"
+      ],
       "score_before": 100,
       "grade_before": "A - Enterprise Agent Ready",
       "score_after": 100,
