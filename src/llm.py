@@ -54,3 +54,4 @@ def synthesize_contracts(report: ReadinessReport, force_llm: bool = False) -> tu
             parts = out.split("===SPLIT===")
             return parts[0].strip(), parts[1].strip(), "llm_synthesized"
     return report.generated_policy_yaml, report.generated_agents_md, "precalculated_deterministic"
+

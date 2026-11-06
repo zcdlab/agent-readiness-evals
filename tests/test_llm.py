@@ -41,3 +41,4 @@ def test_cli_fix_with_llm_flag(tmp_path: Path, capsys):
     assert cli_main(["fix", str(tmp_path), "--llm"]) == 0
     out = capsys.readouterr().out
     assert "Auto-Onboarded" in out
+

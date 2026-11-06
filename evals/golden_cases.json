@@ -1,0 +1,57 @@
+{
+  "version": "1.0",
+  "benchmark": "agent-readiness-golden-evals",
+  "description": "Pre-calculated golden fixtures for offline evaluation and deterministic web demo simulation. In normal workflow, LLMs dynamically synthesize bespoke contracts.",
+  "cases": [
+    {
+      "id": "unprepared_service",
+      "name": "Legacy Bare Script Service",
+      "path": "examples/unprepared_service",
+      "stack": [],
+      "sensitive_paths": [".env", "infra/prod/"],
+      "score_before": 0,
+      "grade_before": "F - Unprepared",
+      "score_after": 100,
+      "grade_after": "A - Enterprise Agent Ready",
+      "missing_safeguards": [
+        "BUILD.bazel / pyproject.toml",
+        "tests/ directory",
+        ".agent-policy.yaml",
+        "AGENTS.md"
+      ],
+      "precalculated_policy_yaml": "# Zero-Trust AI Agent Policy Contract\nversion: '1.0'\npermission_tier: sandbox_write\nenforcement: strict\nprotected_paths:\n  - .agent-policy.yaml\n  - .env\n  - infra/prod/\nallowed_tools:\n  - file_read\n  - file_edit\n  - run_command\ncommand_rules:\n  banned:\n    - 'rm -rf*'\n    - '*curl*|*sh*'\n    - 'git push --force*'\nverification_hooks:\n  pre_commit_gate: 'pytest -v --tb=short tests/'\n",
+      "precalculated_agents_md": "# Agent Operating Guidelines & Harness Engineering Contract\n\n> **First Principles:** Models are stochastic token predictors. Without an execution harness, agents suffer from context drift and undetected regressions. All actions here are bounded and test-gated.\n\n## 1. Architectural & Design Anchor Points\n- [ARCHITECTURE.md](ARCHITECTURE.md): System boundaries and topology\n\n## 2. Multi-Tier Verification Ladder\n1. Tier 1 (Unit Loop): Fast sub-second test execution (`pytest -k <func>`, budget < 0.2s)\n2. Tier 2 (Static Checks): `ruff check` linting and `mypy --strict` type verification\n3. Tier 3 (Full Regression Gate): `pytest -v --tb=short tests/` (100% green required)\n4. Tier 4 (CI Telemetry): `pytest --junitxml=.agent/results.xml`\n\n## 3. Environment & Boundaries\n- Detected Stack: general\n- Permission Tier: `sandbox_write` (scoped strictly to `src/` and `tests/`)\n- Quarantined Paths (Read-Only): .agent-policy.yaml, .env, infra/prod/\n- Invariant: Never mark task complete or push commits if any test fails.\n"
+    },
+    {
+      "id": "unconfigured_service",
+      "name": "Unconfigured Python/Bazel Microservice",
+      "path": "examples/unconfigured_service",
+      "stack": ["bazel", "python"],
+      "sensitive_paths": [".env", "infra/prod/"],
+      "score_before": 50,
+      "grade_before": "C - High Blast Risk",
+      "score_after": 100,
+      "grade_after": "A - Enterprise Agent Ready",
+      "missing_safeguards": [
+        ".agent-policy.yaml",
+        "AGENTS.md"
+      ],
+      "precalculated_policy_yaml": "# Zero-Trust AI Agent Policy Contract\nversion: '1.0'\npermission_tier: sandbox_write\nenforcement: strict\nprotected_paths:\n  - .agent-policy.yaml\n  - .env\n  - infra/prod/\nallowed_tools:\n  - file_read\n  - file_edit\n  - run_command\ncommand_rules:\n  banned:\n    - 'rm -rf*'\n    - '*curl*|*sh*'\n    - 'git push --force*'\nverification_hooks:\n  pre_commit_gate: 'pytest -v --tb=short tests/'\n",
+      "precalculated_agents_md": "# Agent Operating Guidelines & Harness Engineering Contract\n\n> **First Principles:** Models are stochastic token predictors. Without an execution harness, agents suffer from context drift and undetected regressions. All actions here are bounded and test-gated.\n\n## 1. Architectural & Design Anchor Points\n- [ARCHITECTURE.md](ARCHITECTURE.md): System boundaries and topology\n\n## 2. Multi-Tier Verification Ladder\n1. Tier 1 (Unit Loop): Fast sub-second test execution (`pytest -k <func>`, budget < 0.2s)\n2. Tier 2 (Static Checks): `ruff check` linting and `mypy --strict` type verification\n3. Tier 3 (Full Regression Gate): `pytest -v --tb=short tests/` (100% green required)\n4. Tier 4 (CI Telemetry): `pytest --junitxml=.agent/results.xml`\n\n## 3. Environment & Boundaries\n- Detected Stack: bazel, python\n- Permission Tier: `sandbox_write` (scoped strictly to `src/` and `tests/`)\n- Quarantined Paths (Read-Only): .agent-policy.yaml, .env, infra/prod/\n- Invariant: Never mark task complete or push commits if any test fails.\n"
+    },
+    {
+      "id": "agent_ready_service",
+      "name": "Certified Enterprise Agent-Ready Service",
+      "path": "examples/agent_ready_service",
+      "stack": ["bazel", "python"],
+      "sensitive_paths": [".agent-policy.yaml", "infra/prod/"],
+      "score_before": 100,
+      "grade_before": "A - Enterprise Agent Ready",
+      "score_after": 100,
+      "grade_after": "A - Enterprise Agent Ready",
+      "missing_safeguards": [],
+      "precalculated_policy_yaml": "# Zero-Trust AI Agent Policy Contract\nversion: '1.0'\npermission_tier: sandbox_write\nenforcement: strict\nprotected_paths:\n  - .agent-policy.yaml\n  - infra/prod/\nallowed_tools:\n  - file_read\n  - file_edit\n  - run_command\ncommand_rules:\n  banned:\n    - 'rm -rf*'\n    - '*curl*|*sh*'\n    - 'git push --force*'\nverification_hooks:\n  pre_commit_gate: 'pytest -v --tb=short tests/'\n",
+      "precalculated_agents_md": "# Agent Operating Guidelines & Harness Engineering Contract\n\n> **First Principles:** Models are stochastic token predictors. Without an execution harness, agents suffer from context drift and undetected regressions. All actions here are bounded and test-gated.\n\n## 1. Architectural & Design Anchor Points\n- [ARCHITECTURE.md](ARCHITECTURE.md): Core architectural topology and invariants\n- [DESIGN.md](DESIGN.md): Core architectural topology and invariants\n\n## 2. Multi-Tier Verification Ladder\n1. Tier 1 (Unit Loop): Fast sub-second test execution (`pytest -k <func>`, budget < 0.2s)\n2. Tier 2 (Static Checks): `ruff check` linting and `mypy --strict` type verification\n3. Tier 3 (Full Regression Gate): `pytest -v --tb=short tests/` (100% green required)\n4. Tier 4 (CI Telemetry): `pytest --junitxml=.agent/results.xml`\n\n## 3. Environment & Boundaries\n- Detected Stack: bazel, python\n- Permission Tier: `sandbox_write` (scoped strictly to `src/` and `tests/`)\n- Quarantined Paths (Read-Only): .agent-policy.yaml, infra/prod/\n- Invariant: Never mark task complete or push commits if any test fails.\n"
+    }
+  ]
+}
