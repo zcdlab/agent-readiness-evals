@@ -122,4 +122,18 @@ def test_demo_get_element_by_id_integrity():
     assert not missing, f"Script references non-existent HTML IDs: {missing}"
 
 
+def test_demo_concrete_diff_examples():
+    content = Path("docs/index.html").read_text()
+    # Ensure artificial placeholder comments and dummy assertions are removed
+    assert "assert True" not in content, "Dummy test assertion 'assert True' should not exist in demo"
+    assert "# Missing architectural guidelines" not in content, "Trivial placeholder comment should be replaced with concrete code"
+    assert "# Verified against AGENTS.md contract" not in content, "Trivial placeholder comment should be replaced with concrete code"
+
+    # Ensure realistic domain invariants and concrete code are present
+    assert "idempotency_key" in content, "Scenario 4 should demonstrate concrete idempotency key contract"
+    assert "amount_cents" in content, "Scenario 4 should demonstrate concrete integer cent monetary invariants"
+    assert "PaymentGatewayConfig" in content, "Scenario 1 should demonstrate concrete configuration abstraction"
+
+
+
 
