@@ -1019,7 +1019,6 @@
 
         // Random duration between 1.0s and 4.0s (simulating real LLM inference)
         const durationMs = Math.floor(Math.random() * 3000) + 1000;
-        const durationSec = (durationMs / 1000).toFixed(1);
 
         btnFix.disabled = true;
         btnFix.className = "px-3.5 py-1.5 rounded-lg bg-blue-600 text-white font-semibold text-xs shadow-sm flex items-center gap-2 cursor-wait opacity-95 transition-all";
@@ -1028,7 +1027,7 @@
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          <span id="btn-fix-label">LLM Synthesizing Readiness... (${durationSec}s)</span>
+          <span id="btn-fix-label">LLM Synthesizing Readiness...</span>
         `;
 
         if (banner) {
@@ -1042,25 +1041,21 @@
               </svg>
               <span id="banner-spin-text" class="font-medium animate-pulse">LLM Step 1/3: Scanning AST &amp; quarantining sensitive paths (.env, infra/prod/)...</span>
             </div>
-            <span id="banner-spin-timer" class="font-mono text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-bold shrink-0">${(durationMs * 0.33 / 1000).toFixed(1)}s / ${durationSec}s</span>
+            <span id="banner-spin-timer" class="font-mono text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-bold shrink-0 animate-pulse">Synthesizing...</span>
           `;
         }
 
         // Timer 1: ~33%
         const t1 = setTimeout(() => {
           const st = document.getElementById('banner-spin-text');
-          const tm = document.getElementById('banner-spin-timer');
           if (st) st.innerHTML = "LLM Step 2/3: Prompting LLM to synthesize zero-trust <code>.agent-policy.yaml</code> blast-radius boundary...";
-          if (tm) tm.textContent = `${(durationMs * 0.66 / 1000).toFixed(1)}s / ${durationSec}s`;
         }, Math.floor(durationMs * 0.33));
         onboardSpinTimers.push(t1);
 
         // Timer 2: ~66%
         const t2 = setTimeout(() => {
           const st = document.getElementById('banner-spin-text');
-          const tm = document.getElementById('banner-spin-timer');
           if (st) st.innerHTML = "LLM Step 3/3: Synthesizing <code>AGENTS.md</code> operating contract with 5-tier verification ladder...";
-          if (tm) tm.textContent = `${durationSec}s / ${durationSec}s`;
         }, Math.floor(durationMs * 0.66));
         onboardSpinTimers.push(t2);
 
