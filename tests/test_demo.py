@@ -8,11 +8,16 @@ def test_demo_index_html_exists_and_contains_core_elements():
     assert doc.exists()
     content = doc.read_text()
     assert "agent-readiness" in content
-    assert 'What Makes a Repository "Agent-Ready"?' in content
-    assert "The 4 Foundations of Harness Engineering" in content
-    assert "unconfigured_service" in content
-    assert "agent_ready_service" in content
+    assert "unprepared" in content
+    assert "unconfigured" in content
+    assert "fastmcp" in content
+    assert "guarded" in content
     assert "Auto-Onboard" in content
+
+
+def test_demo_no_revert_button_rendered():
+    content = Path("docs/index.html").read_text()
+    assert "Revert to Initial" not in content, "Revert button should not be present in final git diff step"
 
 
 def test_demo_javascript_syntax_and_integrity():
