@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>AgentReadiness — What Makes a Repository Ready for AI Coding Agents?</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -53,18 +56,6 @@
   <!-- Main Container -->
   <main class="flex-1 max-w-6xl mx-auto w-full px-6 py-8 space-y-6">
 
-    <!-- Architecture Info Callout: Demo Fixtures vs. Normal LLM Workflow -->
-    <div class="bg-blue-50/70 border border-blue-200/80 rounded-xl p-3.5 flex items-start justify-between gap-3 text-xs text-blue-900 shadow-sm">
-      <div class="flex items-start gap-2.5">
-        <span class="text-base leading-none">💡</span>
-        <div>
-          <span class="font-bold text-blue-950">Execution Architecture:</span>
-          This web demo evaluates sample repositories using <span class="font-semibold text-blue-800">pre-calculated golden fixtures</span> for zero-dependency browser execution.
-          In your <span class="font-semibold text-blue-800">normal CLI / SDK workflow</span>, the engine seamlessly calls real LLMs (Gemini, OpenAI, Anthropic, or local models) by setting <code class="font-mono bg-blue-100/80 px-1 py-0.5 rounded text-blue-900 text-[11px]">OPENAI_API_KEY</code> or <code class="font-mono bg-blue-100/80 px-1 py-0.5 rounded text-blue-900 text-[11px]">GEMINI_API_KEY</code> in <code class="font-mono bg-blue-100/80 px-1 py-0.5 rounded text-blue-900 text-[11px]">.env</code> or passing <code class="font-mono bg-blue-100/80 px-1 py-0.5 rounded text-blue-900 text-[11px]">readiness fix --llm</code> to synthesize bespoke repository policies.
-        </div>
-      </div>
-    </div>
-
     <!-- ======================================================== -->
     <!-- TAB 1: SAMPLE REPO EXPLORER: GOOD VS BAD REPO            -->
     <!-- ======================================================== -->
@@ -76,16 +67,6 @@
           <h2 class="text-xl font-bold text-slate-900">What Makes a Repository "Agent-Ready"?</h2>
           <p class="text-sm text-slate-600 mt-0.5">Compare a vulnerable unprepared repository against a certified agent-ready codebase file-by-file.</p>
         </div>
-      </div>
-
-      <!-- Focused When to Use Callout -->
-      <div class="bg-blue-50/80 border border-blue-200 rounded-xl p-4">
-        <div class="flex items-center gap-2 text-xs font-bold text-blue-900 uppercase tracking-wide">
-          <span>💡</span> The Core Premise of Harness Engineering: Taming Stochastic Reasoning
-        </div>
-        <p class="text-sm text-slate-700 mt-1 leading-relaxed">
-          LLMs are autoregressive token predictors. Without a deterministic execution harness, models suffer from context drift, hallucinated dependencies, and undetected regressions. <strong>Harness Engineering</strong> is the discipline of building the environment, sandbox constraints, and deterministic verification gates that transform stochastic LLMs into high-assurance autonomous software engineers.
-        </p>
       </div>
 
       <!-- Sample Repo Toggle Buttons: 0% and 50% only (100% hidden) -->
@@ -181,27 +162,19 @@
               </div>
             </div>
 
-            <!-- Live Interactive Code Editor -->
+            <!-- Clean Unified Diff Card -->
             <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
-              <div class="bg-slate-100/90 px-4 py-2 border-b border-slate-200 flex flex-wrap justify-between items-center gap-2 text-xs">
+              <div class="bg-slate-100/90 px-4 py-2.5 border-b border-slate-200 flex flex-wrap justify-between items-center gap-2 text-xs">
                 <div class="flex items-center space-x-2">
                   <span class="font-mono text-slate-900 font-bold" id="preview-filename">.env</span>
                   <span class="text-[11px] font-mono text-slate-600 bg-slate-200/70 px-2 py-0.5 rounded" id="preview-role">Production Credentials</span>
                   <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded" id="preview-badge">EXPOSED</span>
                 </div>
                 <div class="flex items-center space-x-2 text-[11px] text-slate-500">
-                  <span class="flex items-center gap-1 text-blue-600 font-medium">
-                    <span>✏️</span> Live Interactive Editor
-                  </span>
-                  <span class="text-slate-300">|</span>
                   <span id="editor-line-count" class="font-mono text-[10px]">3 lines</span>
                 </div>
               </div>
-              <textarea id="editor-textarea" spellcheck="false" oninput="handleEditorInput(this.value)" class="w-full font-mono text-xs text-slate-800 bg-white p-4 border-0 focus:ring-0 outline-none resize-none leading-relaxed min-h-[260px] max-h-[380px] overflow-y-auto block"></textarea>
-              <div class="bg-slate-50 px-4 py-1.5 border-t border-slate-100 flex justify-between items-center text-[10px] text-slate-400 font-mono">
-                <span>UTF-8 &bull; In-Browser Live Code Modification</span>
-                <span>Type directly in the editor above to modify file contents</span>
-              </div>
+              <div id="readiness-diff-container" class="w-full bg-white max-h-[420px] overflow-y-auto"></div>
             </div>
 
           </div>
@@ -422,6 +395,172 @@
 
   <!-- Scripts -->
   <script>
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    const SENSITIVE_PATTERNS = [
+      "sk_live_",
+      "AKIA",
+      "postgres://",
+      "STRIPE_SECRET_KEY",
+      "AWS_SECRET_ACCESS_KEY",
+      "DATABASE_URL",
+      "cluster_identifier",
+      "aws_rds_cluster",
+      "aws_s3_bucket"
+    ];
+
+    function highlightReadinessSecrets(line) {
+      if (!line) return '';
+      const escaped = escapeHtml(line);
+      const isSensitive = SENSITIVE_PATTERNS.some(pat => line.includes(pat));
+      if (isSensitive) {
+        return `<span class="text-red-600 font-semibold">${escaped}</span>`;
+      }
+      return escaped;
+    }
+
+    function computeReadinessDiff(currentFile, isRepoOnboarded, initialFile) {
+      const curLines = (currentFile && currentFile.code ? currentFile.code : '').replace(/\r\n/g, '\n').split('\n');
+      const rows = [];
+
+      if (!isRepoOnboarded) {
+        curLines.forEach((line, idx) => {
+          rows.push({
+            type: 'neutral',
+            oldNum: idx + 1,
+            newNum: idx + 1,
+            sign: ' ',
+            text: line,
+            htmlText: highlightReadinessSecrets(line)
+          });
+        });
+        return rows;
+      }
+
+      if (currentFile && currentFile.isGenerated) {
+        curLines.forEach((line, idx) => {
+          rows.push({
+            type: 'add',
+            oldNum: '',
+            newNum: idx + 1,
+            sign: '+',
+            text: line
+          });
+        });
+        return rows;
+      }
+
+      const origLines = (initialFile && initialFile.code ? initialFile.code : (currentFile ? currentFile.code : '')).replace(/\r\n/g, '\n').split('\n');
+
+      let prefixLen = 0;
+      while (prefixLen < origLines.length && prefixLen < curLines.length && origLines[prefixLen] === curLines[prefixLen]) {
+        prefixLen++;
+      }
+
+      let suffixLen = 0;
+      while (
+        suffixLen < (origLines.length - prefixLen) &&
+        suffixLen < (curLines.length - prefixLen) &&
+        origLines[origLines.length - 1 - suffixLen] === curLines[curLines.length - 1 - suffixLen]
+      ) {
+        suffixLen++;
+      }
+
+      if (prefixLen + suffixLen === origLines.length && origLines.length === curLines.length) {
+        curLines.forEach((line, idx) => {
+          rows.push({
+            type: 'neutral',
+            oldNum: idx + 1,
+            newNum: idx + 1,
+            sign: ' ',
+            text: line
+          });
+        });
+        return rows;
+      }
+
+      for (let i = 0; i < prefixLen; i++) {
+        rows.push({
+          type: 'neutral',
+          oldNum: i + 1,
+          newNum: i + 1,
+          sign: ' ',
+          text: origLines[i]
+        });
+      }
+
+      for (let i = prefixLen; i < origLines.length - suffixLen; i++) {
+        rows.push({
+          type: 'del',
+          oldNum: i + 1,
+          newNum: '',
+          sign: '-',
+          text: origLines[i]
+        });
+      }
+
+      for (let j = prefixLen; j < curLines.length - suffixLen; j++) {
+        rows.push({
+          type: 'add',
+          oldNum: '',
+          newNum: j + 1,
+          sign: '+',
+          text: curLines[j]
+        });
+      }
+
+      const origSuffixStart = origLines.length - suffixLen;
+      const curSuffixStart = curLines.length - suffixLen;
+      for (let k = 0; k < suffixLen; k++) {
+        rows.push({
+          type: 'neutral',
+          oldNum: origSuffixStart + k + 1,
+          newNum: curSuffixStart + k + 1,
+          sign: ' ',
+          text: origLines[origSuffixStart + k]
+        });
+      }
+
+      return rows;
+    }
+
+    function renderDiffTable(rows) {
+      if (!rows || rows.length === 0) return '<div class="p-4 text-xs text-slate-400">Empty file</div>';
+      let html = '<div class="font-mono text-xs overflow-x-auto select-text divide-y divide-slate-100">';
+      for (const row of rows) {
+        let rowClass = 'flex items-stretch hover:bg-slate-50/50 transition-colors';
+        let numClass = 'w-10 flex-shrink-0 text-right pr-2 text-[10px] text-slate-400 select-none py-1 border-r border-slate-200/60 bg-slate-50/70';
+        let signClass = 'w-6 flex-shrink-0 text-center font-bold select-none py-1';
+        let textClass = 'flex-1 pl-3 pr-4 py-1 whitespace-pre-wrap break-all';
+
+        if (row.type === 'del') {
+          rowClass += ' bg-red-50 text-red-900 font-medium';
+          numClass = 'w-10 flex-shrink-0 text-right pr-2 text-[10px] text-red-400 select-none py-1 border-r border-red-200 bg-red-100/50';
+          signClass += ' text-red-600 bg-red-100/60';
+        } else if (row.type === 'add') {
+          rowClass += ' bg-emerald-50 text-emerald-950 font-medium';
+          numClass = 'w-10 flex-shrink-0 text-right pr-2 text-[10px] text-emerald-500 select-none py-1 border-r border-emerald-200 bg-emerald-100/50';
+          signClass += ' text-emerald-600 bg-emerald-100/60';
+        } else {
+          rowClass += ' bg-white text-slate-800';
+          signClass += ' text-transparent';
+        }
+
+        const displayNum = row.oldNum || row.newNum || '';
+        const renderedText = row.htmlText || escapeHtml(row.text);
+        html += `<div class="${rowClass}">` +
+          `<span class="${numClass}">${displayNum}</span>` +
+          `<span class="${signClass}">${row.sign || '&nbsp;'}</span>` +
+          `<span class="${textClass}">${renderedText}</span>` +
+          `</div>`;
+      }
+      html += '</div>';
+      return html;
+    }
+
     function switchTab(tabId) {
       document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
       document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -996,16 +1135,26 @@
       document.getElementById('preview-badge').textContent = f.status;
       document.getElementById('preview-badge').className = "text-[10px] font-mono font-bold px-2 py-0.5 rounded " + f.statusClass;
 
-      const textarea = document.getElementById('editor-textarea');
-      textarea.value = f.code;
-      const lines = f.code.split('\n').length;
-      document.getElementById('editor-line-count').textContent = lines + " lines";
+      const lines = (f.code || '').split('\n').length;
+      const lineCountEl = document.getElementById('editor-line-count');
+      if (lineCountEl) lineCountEl.textContent = lines + " lines";
+
+      // Render clean unified diff or file viewer
+      const initialFiles = currentSampleKey === 'unprepared' ? initialUnpreparedFiles : (currentSampleKey === 'unconfigured' ? initialUnconfiguredFiles : []);
+      const initialFile = initialFiles.find(initF => initF.name === f.name);
+      const rows = computeReadinessDiff(f, r.onboarded, initialFile);
+      const container = document.getElementById('readiness-diff-container');
+      if (container) {
+        container.innerHTML = renderDiffTable(rows);
+      }
 
       const card = document.getElementById('safety-card');
-      card.className = "p-3.5 rounded-lg border flex items-start gap-3 transition-all " + f.safetyClass;
-      document.getElementById('safety-icon').textContent = f.safetyIcon;
-      document.getElementById('safety-title').textContent = f.safetyTitle;
-      document.getElementById('safety-desc').textContent = f.safetyDesc;
+      if (card) {
+        card.className = "p-3.5 rounded-lg border flex items-start gap-3 transition-all " + f.safetyClass;
+        document.getElementById('safety-icon').textContent = f.safetyIcon;
+        document.getElementById('safety-title').textContent = f.safetyTitle;
+        document.getElementById('safety-desc').textContent = f.safetyDesc;
+      }
     }
 
     function handleEditorInput(val) {
