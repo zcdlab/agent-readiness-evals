@@ -103,7 +103,7 @@
               <span class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200" id="card-badge-guarded">75 / 100</span>
             </div>
             <div class="text-xs font-mono text-slate-700 mt-2 font-semibold truncate">services/payment_api/</div>
-            <div class="text-[11px] text-slate-500 mt-1 line-clamp-2">Has policy, tests, and build spec; missing AGENTS.md guidelines</div>
+            <div class="text-[11px] text-slate-500 mt-1 line-clamp-2">Has policy, tests, and build spec; missing AGENTS.md guidelines (drift &amp; idempotency risk)</div>
           </button>
 
           <!-- Hidden Option 5: Agent Ready (Preserved for backwards compatibility) -->
@@ -410,15 +410,15 @@
       },
       {
         name: "src/app.py",
-        icon: "📄",
-        status: "UNPINNED",
-        statusClass: "bg-amber-100 text-amber-700 font-bold",
-        role: "Unpinned Application Code",
-        code: `import os\n\ndef process_payment(amount: float) -> dict:\n    # Danger: Reading raw unparsed environment\n    secret = os.getenv("STRIPE_SECRET_KEY", "sk_live_dummy")\n    return {"status": "paid", "amount": amount}`,
-        safetyTitle: "Warning: Missing Reproducible Build",
-        safetyDesc: "There is no pyproject.toml or requirements lockfile. Autonomous agents will guess package managers or break system dependencies.",
-        safetyIcon: "⚠️",
-        safetyClass: "bg-amber-50 border-amber-200 text-amber-900"
+        icon: "🚨",
+        status: "UNGUARDED",
+        statusClass: "bg-red-100 text-red-700 font-bold",
+        role: "Exposed Secrets & Unvalidated Logic",
+        code: `import os\n\ndef process_payment(amount: float) -> dict:\n    # Ingesting raw plaintext secret from unquarantined .env\n    stripe_key = os.environ.get("STRIPE_SECRET_KEY")\n    if not stripe_key:\n        raise RuntimeError("Missing plaintext secret")\n    return {"status": "paid", "amount": amount, "gateway": "stripe_live"}`,
+        safetyTitle: "Critical Risk: Ingesting Plaintext Secrets",
+        safetyDesc: "Application logic directly accesses unquarantined secrets from .env without input validation or configuration boundaries.",
+        safetyIcon: "🚨",
+        safetyClass: "bg-red-50 border-red-200 text-red-900"
       }
     ];
 
@@ -470,7 +470,7 @@
         statusClass: "bg-emerald-100 text-emerald-800 font-bold",
         role: "Deterministic Verification Test Suite (Synthesized)",
         isGenerated: true,
-        code: `from src.app import process_payment\n\ndef test_process_payment_valid():\n    res = process_payment(100.0)\n    assert res["status"] == "paid"\n    assert res["amount"] == 100.0`,
+        code: `import pytest\nfrom src.app import process_payment, PaymentGatewayConfig\n\ndef test_process_payment_valid():\n    res = process_payment(49.99)\n    assert res["status"] == "paid"\n    assert res["amount"] == 49.99\n    assert res["env"] == "sandbox"\n\ndef test_process_payment_negative_rejected():\n    with pytest.raises(ValueError, match="must be greater than zero"):\n        process_payment(-10.0)`,
         safetyTitle: "✨ Auto-Onboarded: Deterministic Verification Harness",
         safetyDesc: "Synthesized in-place by readiness fix. Enables test-driven development (TDD) execution loops for agents.",
         safetyIcon: "🧪",
@@ -479,12 +479,12 @@
       {
         name: "src/app.py",
         icon: "📄",
-        status: "✅ VERIFIED",
+        status: "🛡️ HARDENED",
         statusClass: "bg-emerald-100 text-emerald-800 font-bold border border-emerald-200",
         role: "Guarded Application Logic",
-        code: `import os\n\ndef process_payment(amount: float) -> dict:\n    # Guarded: Bound to tests and AGENTS.md contract\n    secret = os.getenv("STRIPE_SECRET_KEY", "sk_live_dummy")\n    return {"status": "paid", "amount": amount}`,
-        safetyTitle: "Pass: Covered by Test Harness & Guidelines",
-        safetyDesc: "Application logic is guarded by deterministic pytest suite in tests/test_app.py and operating constraints in AGENTS.md.",
+        code: `from dataclasses import dataclass\n\n@dataclass\nclass PaymentGatewayConfig:\n    timeout_seconds: int = 15\n    environment: str = "sandbox"\n\ndef process_payment(amount: float, config: PaymentGatewayConfig | None = None) -> dict:\n    if amount <= 0:\n        raise ValueError("Payment amount must be greater than zero")\n    cfg = config or PaymentGatewayConfig()\n    return {"status": "paid", "amount": round(amount, 2), "env": cfg.environment}`,
+        safetyTitle: "Pass: Decoupled from Quarantined Secrets",
+        safetyDesc: "Application logic now uses structured config and input validation, completely isolated from quarantined secrets in .env.",
         safetyIcon: "✅",
         safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
       },
@@ -590,7 +590,7 @@
         statusClass: "bg-emerald-100 text-emerald-800 font-bold",
         role: "Tool Verification Harness (Synthesized)",
         isGenerated: true,
-        code: `from src.server import query_database\n\ndef test_query_database_safe():\n    res = query_database("SELECT 1")\n    assert res["rows"] == []`,
+        code: `import pytest\nfrom src.server import query_database\n\ndef test_query_database_safe():\n    res = query_database("SELECT * FROM users")\n    assert res["rows"] == []\n\ndef test_query_database_blocks_drop_mutation():\n    with pytest.raises(ValueError, match="Mutation queries blocked"):\n        query_database("DROP TABLE users")`,
         safetyTitle: "✨ Auto-Onboarded: Tool Verification Test Suite",
         safetyDesc: "Enables autonomous agents to run test-driven verification before altering tool interfaces.",
         safetyIcon: "🧪",
@@ -642,7 +642,7 @@
         status: "CONFIGURED",
         statusClass: "bg-emerald-100 text-emerald-700",
         role: "Zero-Trust Boundary Policy",
-        code: `version: "1.0"\npermission_tier: sandbox_write\nenforcement: strict\nprotected_paths:\n  - .agent-policy.yaml\n  - infra/\n  - .env`,
+        code: `version: "1.0"\npermission_tier: sandbox_write\nenforcement: strict\nprotected_paths:\n  - .agent-policy.yaml\n  - infra/\n  - .env\nverification_hooks:\n  pre_commit_gate: "pytest tests/"`,
         safetyTitle: "Pass: Zero-Trust Boundary Present",
         safetyDesc: "Production cloud resources and secrets are protected against direct modification.",
         safetyIcon: "✓",
@@ -654,33 +654,33 @@
         status: "CONFIGURED",
         statusClass: "bg-emerald-100 text-emerald-700",
         role: "FastAPI Build Specification",
-        code: `[project]\nname = "payment-api"\nversion = "1.0.0"\ndependencies = [\n    "fastapi>=0.110.0",\n    "pytest>=8.0",\n]`,
+        code: `[project]\nname = "payment-api"\nversion = "1.0.0"\ndependencies = [\n    "fastapi>=0.110.0",\n    "pydantic>=2.0",\n    "pytest>=8.0",\n]`,
         safetyTitle: "Pass: Build Spec Present",
         safetyDesc: "Clean dependencies and reproducible virtual environment configuration.",
         safetyIcon: "✓",
         safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
       },
       {
-        name: "tests/test_api.py",
-        icon: "🧪",
-        status: "CONFIGURED",
-        statusClass: "bg-emerald-100 text-emerald-700",
-        role: "Automated Test Suite",
-        code: `def test_payment_endpoint():\n    assert True`,
-        safetyTitle: "Pass: Test Harness Present",
-        safetyDesc: "Autonomous agents can execute test runs locally to verify code changes.",
-        safetyIcon: "✓",
-        safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
+        name: "src/api.py",
+        icon: "🚨",
+        status: "CONTEXT DRIFT RISK",
+        statusClass: "bg-amber-100 text-amber-800 font-bold",
+        role: "Payment Charge Endpoint Logic",
+        code: `def process_charge(account_id: str, amount: float, currency: str = "USD") -> dict:\n    # Float calculations cause precision drift in monetary balances\n    # No idempotency key is required or validated on retry\n    fee = amount * 0.029 + 0.30\n    total = amount + fee\n    return {\n        "status": "settled",\n        "account_id": account_id,\n        "total": round(total, 2),\n        "currency": currency,\n    }`,
+        safetyTitle: "Drift Risk: Unbounded Business Logic",
+        safetyDesc: "Without AGENTS.md guidelines, coding agents introduced floating-point monetary math and omitted idempotency keys, risking double-charges.",
+        safetyIcon: "⚠️",
+        safetyClass: "bg-amber-50 border-amber-200 text-amber-900"
       },
       {
-        name: "src/api.py",
-        icon: "📄",
-        status: "MISSING CONTRACT",
-        statusClass: "bg-amber-100 text-amber-700 font-bold",
-        role: "Payment API Endpoint Logic",
-        code: `def process_payment(amount: int):\n    # Missing architectural guidelines\n    return {"status": "ok", "amount": amount}`,
-        safetyTitle: "Warning: Missing AGENTS.md Operating Contract",
-        safetyDesc: "Without AGENTS.md, agents suffer from context drift, guessing test command flags and breaking idempotency invariants.",
+        name: "tests/test_api.py",
+        icon: "🧪",
+        status: "INCOMPLETE TESTS",
+        statusClass: "bg-amber-100 text-amber-800 font-bold",
+        role: "Payment Unit Test Suite",
+        code: `from src.api import process_charge\n\ndef test_charge_basic():\n    # Weak test: ignores idempotency key and float precision edge cases\n    res = process_charge("acct_101", 100.0)\n    assert res["status"] == "settled"\n    assert res["total"] == 103.2`,
+        safetyTitle: "Warning: Missing Invariant Assertions",
+        safetyDesc: "Test suite lacks contract enforcement for idempotency headers or zero-rounding precision.",
         safetyIcon: "⚠️",
         safetyClass: "bg-amber-50 border-amber-200 text-amber-900"
       }
@@ -694,10 +694,34 @@
         statusClass: "bg-emerald-100 text-emerald-800 font-bold",
         role: "Operating Guidelines Contract (Synthesized)",
         isGenerated: true,
-        code: `# Payment API Agent Operating Contract\n# Synthesized in-place by readiness fix\n\n## 1. Architectural Anchor Points & Invariants\n- All payment settlements must be idempotent.\n- Quarantined: infra/ and .env are read-only.\n\n## 2. Multi-Tier Verification Ladder\n1. Tier 1: pytest tests/test_api.py (budget < 0.2s)\n2. Tier 2: ruff check src/\n3. Tier 3: mypy --strict src/`,
-        safetyTitle: "✨ Auto-Onboarded: Operating Guidelines Contract",
-        safetyDesc: "Synthesized in-place by readiness fix. Prevents context drift with strict verification tiers and idempotency invariants.",
+        code: `# Payment API Agent Operating Contract\n# Synthesized in-place by readiness fix\n\n## 1. Domain Invariants (Zero Context Drift)\n- **Integer Cent Precision**: All transaction amounts MUST be represented as integer cents (\`amount_cents: int\`). Never use floating-point types (\`float\`) for currency to prevent precision loss.\n- **Mandatory Idempotency**: All mutating charge endpoints MUST require an \`idempotency_key: str\` (min 8 chars) to guarantee replay safety.\n- **Quarantined Boundaries**: Cloud infrastructure (\`infra/\`) and secrets (\`.env\`) are strictly quarantined per \`.agent-policy.yaml\`.\n\n## 2. Multi-Tier Verification Ladder\n- **Tier 1 (Fast Unit Tests)**: \`pytest tests/test_api.py -v\` (execution budget: < 2.0s)\n- **Tier 2 (Static Typing & Linter)**: \`ruff check src/ && mypy --strict src/\`\n- **Tier 3 (Idempotency Simulation)**: \`pytest -k "idempotency" tests/\`\n\n## 3. Pre-Commit Enforcement Gate\n- Run Tier 1 test suite immediately after any AST mutation.`,
+        safetyTitle: "✨ Auto-Onboarded: Domain Invariants Contract",
+        safetyDesc: "Synthesized in-place by readiness fix. Anchors autonomous agents to integer cents, mandatory idempotency, and a 3-tier test ladder.",
         safetyIcon: "🤖",
+        safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
+      },
+      {
+        name: "src/api.py",
+        icon: "📄",
+        status: "CONTRACT COMPLIANT",
+        statusClass: "bg-emerald-100 text-emerald-700 font-bold",
+        role: "Hardened Payment Logic",
+        code: `def process_charge(account_id: str, amount_cents: int, idempotency_key: str, currency: str = "USD") -> dict:\n    # Enforced by AGENTS.md contract:\n    # 1. Require unique idempotency_key to prevent duplicate charges on retry\n    # 2. Strict integer cents (amount_cents) eliminates float precision errors\n    if not idempotency_key or len(idempotency_key.strip()) < 8:\n        raise ValueError("Missing or invalid idempotency_key per AGENTS.md contract")\n    if amount_cents <= 0:\n        raise ValueError("amount_cents must be a positive integer")\n\n    fee_cents = int(amount_cents * 0.029) + 30\n    total_cents = amount_cents + fee_cents\n    return {\n        "status": "settled",\n        "account_id": account_id,\n        "idempotency_key": idempotency_key,\n        "total_cents": total_cents,\n        "currency": currency.upper(),\n    }`,
+        safetyTitle: "Pass: Refactored to AGENTS.md Contract",
+        safetyDesc: "Floating point math replaced with exact integer cents (\`amount_cents\`), and idempotency keys enforced on every transaction.",
+        safetyIcon: "✓",
+        safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
+      },
+      {
+        name: "tests/test_api.py",
+        icon: "🧪",
+        status: "CONTRACT VERIFIED",
+        statusClass: "bg-emerald-100 text-emerald-700 font-bold",
+        role: "Deterministic Contract Test Suite",
+        code: `import pytest\nfrom src.api import process_charge\n\ndef test_charge_exact_integer_cents_and_idempotency():\n    res = process_charge("acct_101", amount_cents=10000, idempotency_key="req_uuid_9921")\n    assert res["status"] == "settled"\n    assert res["total_cents"] == 10320\n    assert res["idempotency_key"] == "req_uuid_9921"\n\ndef test_missing_idempotency_raises_contract_error():\n    with pytest.raises(ValueError, match="idempotency_key per AGENTS.md contract"):\n        process_charge("acct_101", amount_cents=10000, idempotency_key="")`,
+        safetyTitle: "Pass: Full Contract Test Coverage",
+        safetyDesc: "Automated tests enforce idempotency key requirements and exact integer arithmetic per AGENTS.md specification.",
+        safetyIcon: "✓",
         safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
       },
       {
@@ -706,7 +730,7 @@
         status: "CONFIGURED",
         statusClass: "bg-emerald-100 text-emerald-700",
         role: "Zero-Trust Boundary Policy",
-        code: `version: "1.0"\npermission_tier: sandbox_write\nenforcement: strict\nprotected_paths:\n  - .agent-policy.yaml\n  - infra/\n  - .env`,
+        code: `version: "1.0"\npermission_tier: sandbox_write\nenforcement: strict\nprotected_paths:\n  - .agent-policy.yaml\n  - infra/\n  - .env\nverification_hooks:\n  pre_commit_gate: "pytest tests/"`,
         safetyTitle: "Pass: Zero-Trust Boundary Present",
         safetyDesc: "Production cloud resources and secrets are protected against direct modification.",
         safetyIcon: "✓",
@@ -718,33 +742,9 @@
         status: "CONFIGURED",
         statusClass: "bg-emerald-100 text-emerald-700",
         role: "FastAPI Build Specification",
-        code: `[project]\nname = "payment-api"\nversion = "1.0.0"\ndependencies = [\n    "fastapi>=0.110.0",\n    "pytest>=8.0",\n]`,
+        code: `[project]\nname = "payment-api"\nversion = "1.0.0"\ndependencies = [\n    "fastapi>=0.110.0",\n    "pydantic>=2.0",\n    "pytest>=8.0",\n]`,
         safetyTitle: "Pass: Build Spec Present",
         safetyDesc: "Clean dependencies and reproducible virtual environment configuration.",
-        safetyIcon: "✓",
-        safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
-      },
-      {
-        name: "tests/test_api.py",
-        icon: "🧪",
-        status: "CONFIGURED",
-        statusClass: "bg-emerald-100 text-emerald-700",
-        role: "Automated Test Suite",
-        code: `def test_payment_endpoint():\n    assert True`,
-        safetyTitle: "Pass: Test Harness Present",
-        safetyDesc: "Autonomous agents can execute test runs locally to verify code changes.",
-        safetyIcon: "✓",
-        safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
-      },
-      {
-        name: "src/api.py",
-        icon: "📄",
-        status: "VALIDATED",
-        statusClass: "bg-emerald-100 text-emerald-700",
-        role: "Payment API Endpoint Logic",
-        code: `def process_payment(amount: int):\n    # Verified against AGENTS.md contract\n    return {"status": "ok", "amount": amount}`,
-        safetyTitle: "Pass: Validated Against Contract",
-        safetyDesc: "Payment logic now bound to strict idempotency rules in AGENTS.md.",
         safetyIcon: "✓",
         safetyClass: "bg-emerald-50 border-emerald-200 text-emerald-900"
       }
@@ -963,7 +963,7 @@
         score: 75,
         badge: "75 / 100 [B - Missing Guidelines]",
         badgeClass: "bg-amber-100 text-amber-800 border-amber-200",
-        summary: "Context Drift Risk: Has build specs, tests, and .agent-policy.yaml (75 pts), but missing AGENTS.md. Agent doesn't know verification ladder or architectural invariants.",
+        summary: "Context Drift Risk: Has build specs, tests, and .agent-policy.yaml (75 pts), but missing AGENTS.md. Autonomous agents introduce floating-point rounding errors and omit idempotency keys.",
         onboarded: false,
         files: JSON.parse(JSON.stringify(initialGuardedFiles)),
         initialPillars: [
@@ -1235,7 +1235,7 @@
           r.files = JSON.parse(JSON.stringify(onboardedUnconfiguredFiles));
           currentSelectedFileIndex = 0;
         } else if (currentSampleKey === 'guarded') {
-          r.summary = "✨ Successfully Auto-Onboarded: Synthesized AGENTS.md operating guidelines contract with 4-tier verification ladder.";
+          r.summary = "✨ Successfully Auto-Onboarded: Synthesized AGENTS.md operating contract with domain invariants (integer cents & mandatory idempotency keys) and 3-tier verification ladder.";
           r.files = JSON.parse(JSON.stringify(onboardedGuardedFiles));
           currentSelectedFileIndex = 0;
         }
