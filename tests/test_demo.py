@@ -84,3 +84,42 @@ def test_demo_tab1_diff_container_present():
     assert 'id="readiness-diff-container"' in content, "Missing #readiness-diff-container in docs/index.html"
 
 
+def test_demo_all_archetype_file_arrays_defined():
+    content = Path("docs/index.html").read_text()
+    m = re.search(r"<script>(.*?)</script>", content, re.DOTALL)
+    assert m is not None
+    code = m.group(1)
+
+    expected_arrays = [
+        "initialUnpreparedFiles", "onboardedUnpreparedFiles",
+        "initialFastMcpFiles", "onboardedFastMcpFiles",
+        "initialUnconfiguredFiles", "onboardedUnconfiguredFiles",
+        "initialGuardedFiles", "onboardedGuardedFiles",
+        "initialReadyFiles"
+    ]
+    for arr in expected_arrays:
+        assert f"const {arr}" in code, f"Missing declaration of {arr} in docs/index.html script"
+
+
+def test_demo_sample_repos_keys_and_buttons():
+    content = Path("docs/index.html").read_text()
+    archetypes = ["unprepared", "fastmcp", "unconfigured", "guarded"]
+    for arch in archetypes:
+        assert f'id="btn-repo-{arch}"' in content, f"Missing button for archetype {arch}"
+        assert f'id="card-badge-{arch}"' in content, f"Missing score badge for archetype {arch}"
+
+
+def test_demo_get_element_by_id_integrity():
+    content = Path("docs/index.html").read_text()
+    m = re.search(r"<script>(.*?)</script>", content, re.DOTALL)
+    assert m is not None
+    code = m.group(1)
+
+    static_ids = re.findall(r"document\.getElementById\([\"\x27]([a-zA-Z0-9_\-]+)[\"\x27]\)", code)
+    all_html_ids = set(re.findall(r"id=[\"\x27]([a-zA-Z0-9_\-]+)[\"\x27]", content))
+
+    missing = [i for i in set(static_ids) if i not in all_html_ids]
+    assert not missing, f"Script references non-existent HTML IDs: {missing}"
+
+
+
